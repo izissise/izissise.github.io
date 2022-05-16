@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:content="http://purl.org/rss/1.0/modules/content/"
+xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title></title>
+    <link>https://blog.izissise.net/post/index.xml</link>
+    <description>Hugues&#39;s posts</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <copyright>Creative Commons Attribution 4.0 International License</copyright>
+    <lastBuildDate>Sat, 15 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.izissise.net/post/index.xml" rel="self" type="application/rss+xml" />
+      <item>
+        <title>Parallel bash function call</title>
+        <link>https://blog.izissise.net/post/parallel_and_bash_function/</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/post/parallel_and_bash_function/</guid>
+        <description>GNU Parallel bash</description>
+        <content:encoded><![CDATA[ 
+
+
+
+
+  <h1 id="introduction">Introduction</h1> 
+
+<p>Now that we can execute <a href="https://blog.izissise.net/remote_bash_func_ssh">bash functions remotly</a>, we can scale the execution using <a href="https://www.gnu.org/software/parallel/">GNU Parallel</a>.</p>
+<p>When one wants to make a change or retrieve one particular piece of information on a whole set of machines, multiple choice are available (ansible, puppet, pssh, consul, &hellip;) each with their own upsides and downsides.</p>
+<p>Parallel + ssh + func can give a combination of upsides that I haven&rsquo;t seen elsewhere:</p>
+<ul>
+<li>No prerequisite on remote machine</li>
+<li>Minimum requisite on local machine (bash, ssh, parallel)</li>
+<li>Blazing fast thanks to parallel</li>
+<li>Use plain bash, no new DSL or weird escaping</li>
+<li>Use shell tools that you already know</li>
+</ul>
+<p>For example in fifteen seconds we&rsquo;re able to retrieve 1448 host kernel versions:</p>
+<pre><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
+$ time parallel_host_list_ssh_func hosts.txt kernel_version -j 250 | sort | uniq -c | sort -n
+      2 5.17
+    467 5.23
+    979 5.12
+
+real    0m15,380s
+user    0m49,900s
+sys     0m26,688s
+</code></pre>
+
+
+
+
+  <h1 id="where">Where</h1> 
+
+<p>You can find an helper functions here: <a href="https://github.com/izissise/shell_utils/blob/main/parallel_helpers.bash">shell_utils</a>, you need to copy the functions into your <code>~/.bash_aliases</code>.</p>
+]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>Remote bash function with ssh</title>
+        <link>https://blog.izissise.net/post/remote_bash_func_ssh/</link>
+        <pubDate>Mon, 08 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/post/remote_bash_func_ssh/</guid>
+        <description>Remote bash function with ssh</description>
+        <content:encoded><![CDATA[ 
+
+
+
+
+  <h1 id="genesis">Genesis</h1> 
+
+<p>Often when a shell command line start to become a little long,
+I like to break it down into functions.</p>
+<p>But things start to get complicated when it involve a remote host.</p>
+<p>It usually involve spawning a remote shell with ssh and then double escaping lot of characters (ssh and remote shell) in order to properly execute commands.</p>
+<p>Another solution exist though and it&rsquo;s usage it really simple, just write your commands in a function and pass it&rsquo;s name to a magic wrapper that will on remote host re-export it.</p>
+
+
+
+
+
+  <h1 id="how">How</h1> 
+
+<p>Has show in this excellent <a href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video</a>, <code>bash</code> has <code>declare</code> builtin that can re-export local function into string (automatically taking care of escaping).</p>
+<p>Thus one can pass these generated string to <code>ssh</code>, so functions are re-exported on remote hosts.</p>
+<p>Also <code>bash</code> support nested function, you can create and export namespaces this way:</p>
+<pre><code>namespace() {
+    func2() {
+        ls
+    }
+
+    func1() {
+        func2
+    }
+
+    func1
+}
+
+func=&quot;namespace&quot;
+ssh host &quot;$(declare -f $func;); $func&quot;
+</code></pre>
+
+
+
+
+  <h1 id="why">Why</h1> 
+
+<p>bash and ssh are ubiquitous and existed for a long time. Plus the shell will allow you to run virtually anything on the remote system.</p>
+
+
+
+
+
+  <h1 id="where">Where</h1> 
+
+<p>You can find an helper function here: <a href="https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash">shell_utils</a>, you need to copy the function into your <code>~/.bash_aliases</code>.</p>
+<p>It export <code>ssh_exec_func</code>:</p>
+<pre><code>do_stuff() {
+    echo $1
+    hostname
+}
+ssh_exec_func host -- do_stuff hello
+</code></pre>
+
+
+
+
+  <h1 id="more">More</h1> 
+
+<p>Stay tuned for a post that&rsquo;ll push this concept further.</p>
+]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>Network manager connection action</title>
+        <link>https://blog.izissise.net/post/network-manager-connection-action/</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/post/network-manager-connection-action/</guid>
+        <description>Action on connection rootless</description>
+        <content:encoded><![CDATA[ 
+
+
+
+
+  <h2 id="genesis"><a class="anchor" href="https://blog.izissise.net/" title='Anchor for "Genesis".'><svg aria-hidden="true"><use xlink:href="https://blog.izissise.net/"/></svg></a> Genesis</h2> 
+
+<p>It as always been kind of a hassle to do actions upon connecting to a network using network manager, especially if you want your script to run a with user permissions.</p>
+<p>Maybe you work for multiple companies and you want to setup and run some program when connecting to their VPN.</p>
+<p>You could setup an up rule on your openvpn configuration but it would run as root, and only works for openvpn.</p>
+<p>Why if instead you could have a program that watches network-manager events and run pre-specified commands?</p>
+<p>Look no more and go check-out <a href="https://github.com/izissise/network-manager-connection-action">network-manager-connection-action</a>.</p>
+
+
+
+
+
+  <h2 id="how"><a class="anchor" href="https://blog.izissise.net/" title='Anchor for "How".'><svg aria-hidden="true"><use xlink:href="https://blog.izissise.net/"/></svg></a> How</h2> 
+
+<p>This program is written in Rust and uses Tokio projects to connect to dbus and listen for event from network-manager, if an event come from a connection for which the UUID exist in config file, it runs the associated command.</p>
+
+
+
+
+
+  <h2 id="ssh-canonicalization-usage"><a class="anchor" href="https://blog.izissise.net/" title='Anchor for "SSH canonicalization usage".'><svg aria-hidden="true"><use xlink:href="https://blog.izissise.net/"/></svg></a> SSH canonicalization usage</h2> 
+
+<p>I personally been using this program to automatically setup <a href="https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html">ssh canonicalization</a> on the company search domains when connecting to the VPN.</p>
+<p>With the following ssh configuration at the top:</p>
+<pre><code>##################
+#Canonicalization#
+##################
+
+# Don't canonicalize host with dots (assume there are already full hostname)
+CanonicalizeMaxDots 0
+
+# Fallback to local name Resolution in any case
+CanonicalizeFallbackLocal yes
+CanonicalizeHostname yes
+
+# Include static list
+Include static_canonical_domains.conf
+
+# Include script generated list of CanonicalDomains
+Include tmp/canonical_domains.conf
+</code></pre><p><code>tmp/canonical_domains.conf</code> is generated using <a href="https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh">ssh_canonicalization_gen.sh</a> when connecting to the company VPN.</p>
+<p>It will transform the file into this:</p>
+<pre><code>CanonicalDomains internal.company.com historic.company.com
+</code></pre><p>This usage can be found in repository&rsquo;s example directory</p>
+]]></content:encoded>
+      </item>
+    
+  </channel>
+</rss>

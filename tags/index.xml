@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:content="http://purl.org/rss/1.0/modules/content/"
+xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title></title>
+    <link>https://blog.izissise.net/tags/index.xml</link>
+    <description>Hugues&#39;s posts</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <copyright>Creative Commons Attribution 4.0 International License</copyright>
+    <lastBuildDate>Sat, 15 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.izissise.net/tags/index.xml" rel="self" type="application/rss+xml" />
+      <item>
+        <title>bash</title>
+        <link>https://blog.izissise.net/tags/bash/index.xml</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/bash/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>ops</title>
+        <link>https://blog.izissise.net/tags/ops/index.xml</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/ops/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>parallel</title>
+        <link>https://blog.izissise.net/tags/parallel/index.xml</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/parallel/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>ssh</title>
+        <link>https://blog.izissise.net/tags/ssh/index.xml</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/ssh/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>script</title>
+        <link>https://blog.izissise.net/tags/script/index.xml</link>
+        <pubDate>Mon, 08 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/script/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>automation</title>
+        <link>https://blog.izissise.net/tags/automation/index.xml</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/automation/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>dbus</title>
+        <link>https://blog.izissise.net/tags/dbus/index.xml</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/dbus/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>linux</title>
+        <link>https://blog.izissise.net/tags/linux/index.xml</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/linux/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>rust</title>
+        <link>https://blog.izissise.net/tags/rust/index.xml</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/rust/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+      <item>
+        <title>tool</title>
+        <link>https://blog.izissise.net/tags/tool/index.xml</link>
+        <pubDate>Sat, 06 Mar 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/tags/tool/index.xml</guid>
+        <description></description>
+        <content:encoded><![CDATA[ ]]></content:encoded>
+      </item>
+    
+  </channel>
+</rss>

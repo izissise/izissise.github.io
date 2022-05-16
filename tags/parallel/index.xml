@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:content="http://purl.org/rss/1.0/modules/content/"
+xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title></title>
+    <link>https://blog.izissise.net/tags/parallel/index.xml</link>
+    <description>Hugues&#39;s posts</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <copyright>Creative Commons Attribution 4.0 International License</copyright>
+    <lastBuildDate>Sat, 15 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.izissise.net/tags/parallel/index.xml" rel="self" type="application/rss+xml" />
+      <item>
+        <title>Parallel bash function call</title>
+        <link>https://blog.izissise.net/post/parallel_and_bash_function/</link>
+        <pubDate>Sat, 15 Jan 2022 00:00:00 +0000</pubDate>
+        
+        <guid>https://blog.izissise.net/post/parallel_and_bash_function/</guid>
+        <description>GNU Parallel bash</description>
+        <content:encoded><![CDATA[ 
+
+
+
+
+  <h1 id="introduction">Introduction</h1> 
+
+<p>Now that we can execute <a href="https://blog.izissise.net/remote_bash_func_ssh">bash functions remotly</a>, we can scale the execution using <a href="https://www.gnu.org/software/parallel/">GNU Parallel</a>.</p>
+<p>When one wants to make a change or retrieve one particular piece of information on a whole set of machines, multiple choice are available (ansible, puppet, pssh, consul, &hellip;) each with their own upsides and downsides.</p>
+<p>Parallel + ssh + func can give a combination of upsides that I haven&rsquo;t seen elsewhere:</p>
+<ul>
+<li>No prerequisite on remote machine</li>
+<li>Minimum requisite on local machine (bash, ssh, parallel)</li>
+<li>Blazing fast thanks to parallel</li>
+<li>Use plain bash, no new DSL or weird escaping</li>
+<li>Use shell tools that you already know</li>
+</ul>
+<p>For example in fifteen seconds we&rsquo;re able to retrieve 1448 host kernel versions:</p>
+<pre><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
+$ time parallel_host_list_ssh_func hosts.txt kernel_version -j 250 | sort | uniq -c | sort -n
+      2 5.17
+    467 5.23
+    979 5.12
+
+real    0m15,380s
+user    0m49,900s
+sys     0m26,688s
+</code></pre>
+
+
+
+
+  <h1 id="where">Where</h1> 
+
+<p>You can find an helper functions here: <a href="https://github.com/izissise/shell_utils/blob/main/parallel_helpers.bash">shell_utils</a>, you need to copy the functions into your <code>~/.bash_aliases</code>.</p>
+]]></content:encoded>
+      </item>
+    
+  </channel>
+</rss>
