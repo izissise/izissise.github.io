@@ -46,7 +46,7 @@ xmlns:atom="http://www.w3.org/2005/Atom">
 
 <p>I personally been using this program to automatically setup <a href="https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html">ssh canonicalization</a> on the company search domains when connecting to the VPN.</p>
 <p>With the following ssh configuration at the top:</p>
-<pre><code>##################
+<pre tabindex="0"><code>##################
 #Canonicalization#
 ##################
 
@@ -64,7 +64,7 @@ Include static_canonical_domains.conf
 Include tmp/canonical_domains.conf
 </code></pre><p><code>tmp/canonical_domains.conf</code> is generated using <a href="https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh">ssh_canonicalization_gen.sh</a> when connecting to the company VPN.</p>
 <p>It will transform the file into this:</p>
-<pre><code>CanonicalDomains internal.company.com historic.company.com
+<pre tabindex="0"><code>CanonicalDomains internal.company.com historic.company.com
 </code></pre><p>This usage can be found in repository&rsquo;s example directory</p>
 ]]></content:encoded>
       </item>

@@ -39,7 +39,7 @@ I like to break it down into functions.</p>
 <p>Has show in this excellent <a href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video</a>, <code>bash</code> has <code>declare</code> builtin that can re-export local function into string (automatically taking care of escaping).</p>
 <p>Thus one can pass these generated string to <code>ssh</code>, so functions are re-exported on remote hosts.</p>
 <p>Also <code>bash</code> support nested function, you can create and export namespaces this way:</p>
-<pre><code>namespace() {
+<pre tabindex="0"><code>namespace() {
     func2() {
         ls
     }
@@ -70,7 +70,7 @@ ssh host &quot;$(declare -f $func;); $func&quot;
 
 <p>You can find an helper function here: <a href="https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash">shell_utils</a>, you need to copy the function into your <code>~/.bash_aliases</code>.</p>
 <p>It export <code>ssh_exec_func</code>:</p>
-<pre><code>do_stuff() {
+<pre tabindex="0"><code>do_stuff() {
     echo $1
     hostname
 }

@@ -35,7 +35,7 @@ xmlns:atom="http://www.w3.org/2005/Atom">
 <li>Use shell tools that you already know</li>
 </ul>
 <p>For example in fifteen seconds we&rsquo;re able to retrieve 1448 host kernel versions:</p>
-<pre><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
+<pre tabindex="0"><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
 $ time parallel_host_list_ssh_func hosts.txt kernel_version -j 250 | sort | uniq -c | sort -n
       2 5.17
     467 5.23

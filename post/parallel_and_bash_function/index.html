@@ -3,7 +3,7 @@
   <head prefix="og: http://ogp.me/ns#">
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="Hugo 0.81.0">
+<meta name="generator" content="Hugo 0.92.2">
 <meta name="theme" content="Color Your World -- gitlab.com/rmaguiar/hugo-theme-color-your-world">
 
 
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <li>Use shell tools that you already know</li>
 </ul>
 <p>For example in fifteen seconds we&rsquo;re able to retrieve 1448 host kernel versions:</p>
-<pre aria-label="Box containing code sample." tabindex=0><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
+<pre tabindex="0"><code>$ kernel_version() { uname -r | sed 's/\([0-9].[0-9]*\).*/\1/'; }
 $ time parallel_host_list_ssh_func hosts.txt kernel_version -j 250 | sort | uniq -c | sort -n
       2 5.17
     467 5.23
