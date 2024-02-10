@@ -1,31 +1,191 @@
-<!doctype html><html lang=en><html class="dark light"><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>"><title>Remote bash function with ssh
-</title><meta property="og:title" content="Remote bash function with ssh"><link rel=alternate type=application/atom+xml title=RSS href=/atom.xml><script data-goatcounter=https:/izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img src="https://izissise.goatcounter.com/count?p=/posts/remote-bash-func-ssh/&t=Remote bash function with ssh"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet href=/theme/light.css><link id=darkModeStyle rel=stylesheet href=/theme/dark.css><link rel=stylesheet media=screen href=/main.css><div class=content><header><div class=main><a href=/></a></div><nav><a href=/posts style=margin-left:.7em>/posts</a>
-<a href=/about style=margin-left:.7em>/about</a>
-|
-<a id=dark-mode-toggle onclick=toggleTheme(),event.preventDefault() href=#><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
-</a><script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Remote bash function with ssh</div><div class=meta>Posted on <time>2021-03-08</time></div></div><section class=body><h1 id=genesis>Genesis</h1><p>Often when a shell command line start to become a little long,
-I like to break it down into functions.<p>But things start to get complicated when it involve a remote host.<p>It usually involve spawning a remote shell with ssh and then double escaping lot of characters (ssh and remote shell) in order to properly execute commands.<p>Another solution exist though and it's usage it really simple, just write your commands in a function and pass it's name to a magic wrapper that will on remote host re-export it.<h1 id=how>How</h1><p>Has show in this excellent <a href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video</a>, <code>bash</code> has a <code>declare</code> builtin that can re-export local function into string (automatically taking care of escaping).<p>Thus one can pass these generated string to <code>ssh</code>, so functions are re-exported on remote hosts.<p>Also <code>bash</code> support nested function, you can create and export namespaces this way:<pre data-lang=bash style=background-color:#2b303b;color:#c0c5ce class=language-bash><code class=language-bash data-lang=bash><span style=color:#8fa1b3>namespace</span><span>() {
-</span><span>    </span><span style=color:#8fa1b3>func2</span><span>() {
-</span><span>        </span><span style=color:#bf616a>ls
+<!DOCTYPE html>
+<html lang="en">
+<html class="dark light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>" />
+
+    
+
+    
+    
+    
+    <title>
+         Remote bash function with ssh
+        
+    </title>
+
+        
+            <meta property="og:title" content="Remote bash function with ssh" />
+        
+     
+
+     
+         
+     
+
+     
+         
+    
+
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+
+    
+    
+        
+        
+
+        <script data-goatcounter="https:/izissise.goatcounter.com/count" async src="/js/count.js"></script>
+        <noscript>
+            
+            <img style='display: none;' src="https://izissise.goatcounter.com/count?p=&#x2F;posts&#x2F;remote-bash-func-ssh&#x2F;&t=Remote bash function with ssh">
+        </noscript>
+    
+
+
+    
+
+    
+    <link rel="alternate" type="application/atom+xml" title="" href="/atom.xml">
+
+    <link rel="stylesheet" type="text/css" href=/theme/light.css />
+    <link id="darkModeStyle" rel="stylesheet" type="text/css" href="/theme/dark.css" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href=/main.css />
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main">
+        <a href=&#x2F;></a>
+
+    </div>
+
+    <nav>
+        
+        <a href=&#x2F;posts style="margin-left: 0.7em">&#x2F;posts</a>
+        
+        <a href=&#x2F;about style="margin-left: 0.7em">&#x2F;about</a>
+        
+        |
+        <a id="dark-mode-toggle" onclick="toggleTheme(); event.preventDefault();" href="#">
+            <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
+        </a>
+        <script src=/js/themetoggle.js></script>
+    </nav>
+</header>
+
+
+
+
+        
+        
+    
+<main>
+    <article>
+        <div class="title">
+            
+            
+    <div class="page-header">
+        Remote bash function with ssh
+    </div>
+
+
+                <div class="meta">
+                    
+                        Posted on <time>2021-03-08</time>
+                    
+
+                    
+                </div>
+        </div>
+
+        
+
+        
+        
+
+        <section class="body">
+            <h1 id="genesis">Genesis</h1>
+<p>Often when a shell command line start to become a little long,
+I like to break it down into functions.</p>
+<p>But things start to get complicated when it involve a remote host.</p>
+<p>It usually involve spawning a remote shell with ssh and then double escaping lot of characters (ssh and remote shell) in order to properly execute commands.</p>
+<p>Another solution exist though and it's usage it really simple, just write your commands in a function and pass it's name to a magic wrapper that will on remote host re-export it.</p>
+<h1 id="how">How</h1>
+<p>Has show in this excellent <a href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video</a>, <code>bash</code> has a <code>declare</code> builtin that can re-export local function into string (automatically taking care of escaping).</p>
+<p>Thus one can pass these generated string to <code>ssh</code>, so functions are re-exported on remote hosts.</p>
+<p>Also <code>bash</code> support nested function, you can create and export namespaces this way:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#8fa1b3;">namespace</span><span>() {
+</span><span>    </span><span style="color:#8fa1b3;">func2</span><span>() {
+</span><span>        </span><span style="color:#bf616a;">ls
 </span><span>    }
 </span><span>
-</span><span>    </span><span style=color:#8fa1b3>func1</span><span>() {
-</span><span>        </span><span style=color:#bf616a>func2
+</span><span>    </span><span style="color:#8fa1b3;">func1</span><span>() {
+</span><span>        </span><span style="color:#bf616a;">func2
 </span><span>    }
 </span><span>
-</span><span>    </span><span style=color:#bf616a>func1
+</span><span>    </span><span style="color:#bf616a;">func1
 </span><span>}
 </span><span>
-</span><span style=color:#bf616a>func</span><span>=&quot;</span><span style=color:#a3be8c>namespace</span><span>&quot;
-</span><span style=color:#bf616a>ssh</span><span> host &quot;$</span><span style=color:#a3be8c>(</span><span style=color:#b48ead>declare </span><span style=color:#bf616a>-f $func</span><span>;</span><span style=color:#a3be8c>); </span><span>$</span><span style=color:#bf616a>func</span><span>&quot;
-</span></code></pre><h1 id=why>Why</h1><p>bash and ssh are ubiquitous and existed for a long time. Plus the shell will allow you to run virtually anything on the remote system.<h1 id=where>Where</h1><p>You can find an helper function here: <a href=https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash>shell_utils</a>, you need to copy the function into your <code>~/.bash_aliases</code>.<p>It export <code>ssh_exec_func</code>:<pre data-lang=bash style=background-color:#2b303b;color:#c0c5ce class=language-bash><code class=language-bash data-lang=bash><span style=color:#8fa1b3>do_stuff</span><span>() {
-</span><span>    </span><span style=color:#96b5b4>echo </span><span>$</span><span style=color:#bf616a>1
-</span><span>    </span><span style=color:#bf616a>hostname
+</span><span style="color:#bf616a;">func</span><span>=&quot;</span><span style="color:#a3be8c;">namespace</span><span>&quot;
+</span><span style="color:#bf616a;">ssh</span><span> host &quot;$</span><span style="color:#a3be8c;">(</span><span style="color:#b48ead;">declare </span><span style="color:#bf616a;">-f $func</span><span>;</span><span style="color:#a3be8c;">); </span><span>$</span><span style="color:#bf616a;">func</span><span>&quot;
+</span></code></pre>
+<h1 id="why">Why</h1>
+<p>bash and ssh are ubiquitous and existed for a long time. Plus the shell will allow you to run virtually anything on the remote system.</p>
+<h1 id="where">Where</h1>
+<p>You can find an helper function here: <a href="https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash">shell_utils</a>, you need to copy the function into your <code>~/.bash_aliases</code>.</p>
+<p>It export <code>ssh_exec_func</code>:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#8fa1b3;">do_stuff</span><span>() {
+</span><span>    </span><span style="color:#96b5b4;">echo </span><span>$</span><span style="color:#bf616a;">1
+</span><span>    </span><span style="color:#bf616a;">hostname
 </span><span>}
-</span><span style=color:#bf616a>ssh_exec_func</span><span> host -- do_stuff hello
-</span></code></pre><h1 id=more>More</h1><p>Stay tuned for a post that'll push this concept further.</section></article></main></div><footer><hr><nav style=float:right>Hugues |
-<a rel=me href=https://github.com/izissise class=social><img alt=github src=/social_icons/github.svg>
-</a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class=social><img alt=stack-overflow src=/social_icons/stack-overflow.svg>
-</a><a rel=me href=https://links.izissise.net/ class=social><img alt=shaarli src=/social_icons/shaarli.svg>
-</a><a rel=me href=matrix:@huguesm:izissise.net class=social><img alt=matrix src=/social_icons/matrix.svg>
-</a>| &#169; 2024</nav></footer>
+</span><span style="color:#bf616a;">ssh_exec_func</span><span> host -- do_stuff hello
+</span></code></pre>
+<h1 id="more">More</h1>
+<p>Stay tuned for a post that'll push this concept further.</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+    </div>
+</body>
+
+<footer>
+<hr>
+<nav style="float: right;">
+    Hugues | 
+    <a rel="me" href="https:&#x2F;&#x2F;github.com&#x2F;izissise" class="social">
+        <img alt=github src="/social_icons/github.svg">
+    </a>
+    
+    <a rel="me" href="https:&#x2F;&#x2F;stackoverflow.com&#x2F;users&#x2F;2838914&#x2F;izissise" class="social">
+        <img alt=stack-overflow src="/social_icons/stack-overflow.svg">
+    </a>
+    
+    <a rel="me" href="https:&#x2F;&#x2F;links.izissise.net&#x2F;" class="social">
+        <img alt=shaarli src="/social_icons/shaarli.svg">
+    </a>
+    
+    <a rel="me" href="matrix:@huguesm:izissise.net" class="social">
+        <img alt=matrix src="/social_icons/matrix.svg">
+    </a>
+    
+    | &#169; 2024
+</nav>
+</footer>
+
+
+</html>

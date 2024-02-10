@@ -1,28 +1,186 @@
-<!doctype html><html lang=en><html class="dark light"><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>"><title>Network manager connection action
-</title><meta property="og:title" content="Network manager connection action"><link rel=alternate type=application/atom+xml title=RSS href=/atom.xml><script data-goatcounter=https:/izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img src="https://izissise.goatcounter.com/count?p=/posts/network-manager-connection-action/&t=Network manager connection action"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet href=/theme/light.css><link id=darkModeStyle rel=stylesheet href=/theme/dark.css><link rel=stylesheet media=screen href=/main.css><div class=content><header><div class=main><a href=/></a></div><nav><a href=/posts style=margin-left:.7em>/posts</a>
-<a href=/about style=margin-left:.7em>/about</a>
-|
-<a id=dark-mode-toggle onclick=toggleTheme(),event.preventDefault() href=#><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
-</a><script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Network manager connection action</div><div class=meta>Posted on <time>2021-03-06</time></div></div><section class=body><h2 id=genesis>Genesis</h2><p>It as always been kind of a hassle to do actions upon connecting to a network using network manager, especially if you want your script to run a with user permissions.<p>Maybe you work for multiple companies and you want to setup and run some program when connecting to their VPN.<p>You could setup an up rule on your openvpn configuration but it would run as root, and only works for openvpn.<p>Why if instead you could have a program that watches network-manager events and run pre-specified commands?<p>Look no more and go check-out <a href=https://github.com/izissise/network-manager-connection-action>network-manager-connection-action</a>.<h2 id=how>How</h2><p>This program is written in Rust and uses Tokio projects to connect to dbus and listen for event from network-manager, if an event come from a connection for which the UUID exist in config file, it runs the associated command.<h2 id=ssh-canonicalization-usage>SSH canonicalization usage</h2><p>I personally been using this program to automatically setup <a href=https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html>ssh canonicalization</a> on the company search domains when connecting to the VPN.<p>With the following ssh configuration at the top:<pre data-lang=config style=background-color:#2b303b;color:#c0c5ce class=language-config><code class=language-config data-lang=config><span style=color:#65737e>##################
-</span><span style=color:#65737e>#Canonicalization#
-</span><span style=color:#65737e>##################
+<!DOCTYPE html>
+<html lang="en">
+<html class="dark light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>" />
+
+    
+
+    
+    
+    
+    <title>
+         Network manager connection action
+        
+    </title>
+
+        
+            <meta property="og:title" content="Network manager connection action" />
+        
+     
+
+     
+         
+     
+
+     
+         
+    
+
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+
+    
+    
+        
+        
+
+        <script data-goatcounter="https:/izissise.goatcounter.com/count" async src="/js/count.js"></script>
+        <noscript>
+            
+            <img style='display: none;' src="https://izissise.goatcounter.com/count?p=&#x2F;posts&#x2F;network-manager-connection-action&#x2F;&t=Network manager connection action">
+        </noscript>
+    
+
+
+    
+
+    
+    <link rel="alternate" type="application/atom+xml" title="" href="/atom.xml">
+
+    <link rel="stylesheet" type="text/css" href=/theme/light.css />
+    <link id="darkModeStyle" rel="stylesheet" type="text/css" href="/theme/dark.css" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href=/main.css />
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main">
+        <a href=&#x2F;></a>
+
+    </div>
+
+    <nav>
+        
+        <a href=&#x2F;posts style="margin-left: 0.7em">&#x2F;posts</a>
+        
+        <a href=&#x2F;about style="margin-left: 0.7em">&#x2F;about</a>
+        
+        |
+        <a id="dark-mode-toggle" onclick="toggleTheme(); event.preventDefault();" href="#">
+            <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
+        </a>
+        <script src=/js/themetoggle.js></script>
+    </nav>
+</header>
+
+
+
+
+        
+        
+    
+<main>
+    <article>
+        <div class="title">
+            
+            
+    <div class="page-header">
+        Network manager connection action
+    </div>
+
+
+                <div class="meta">
+                    
+                        Posted on <time>2021-03-06</time>
+                    
+
+                    
+                </div>
+        </div>
+
+        
+
+        
+        
+
+        <section class="body">
+            <h2 id="genesis">Genesis</h2>
+<p>It as always been kind of a hassle to do actions upon connecting to a network using network manager, especially if you want your script to run a with user permissions.</p>
+<p>Maybe you work for multiple companies and you want to setup and run some program when connecting to their VPN.</p>
+<p>You could setup an up rule on your openvpn configuration but it would run as root, and only works for openvpn.</p>
+<p>Why if instead you could have a program that watches network-manager events and run pre-specified commands?</p>
+<p>Look no more and go check-out <a href="https://github.com/izissise/network-manager-connection-action">network-manager-connection-action</a>.</p>
+<h2 id="how">How</h2>
+<p>This program is written in Rust and uses Tokio projects to connect to dbus and listen for event from network-manager, if an event come from a connection for which the UUID exist in config file, it runs the associated command.</p>
+<h2 id="ssh-canonicalization-usage">SSH canonicalization usage</h2>
+<p>I personally been using this program to automatically setup <a href="https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html">ssh canonicalization</a> on the company search domains when connecting to the VPN.</p>
+<p>With the following ssh configuration at the top:</p>
+<pre data-lang="config" style="background-color:#2b303b;color:#c0c5ce;" class="language-config "><code class="language-config" data-lang="config"><span style="color:#65737e;">##################
+</span><span style="color:#65737e;">#Canonicalization#
+</span><span style="color:#65737e;">##################
 </span><span>
-</span><span style=color:#65737e># Don&#39;t canonicalize host with dots (assume there are already full hostname)
-</span><span style=color:#bf616a>CanonicalizeMaxDots </span><span style=color:#d08770>0
+</span><span style="color:#65737e;"># Don&#39;t canonicalize host with dots (assume there are already full hostname)
+</span><span style="color:#bf616a;">CanonicalizeMaxDots </span><span style="color:#d08770;">0
 </span><span>
-</span><span style=color:#65737e># Fallback to local name Resolution in any case
-</span><span style=color:#bf616a>CanonicalizeFallbackLocal </span><span style=color:#d08770>yes
-</span><span style=color:#bf616a>CanonicalizeHostname </span><span style=color:#d08770>yes
+</span><span style="color:#65737e;"># Fallback to local name Resolution in any case
+</span><span style="color:#bf616a;">CanonicalizeFallbackLocal </span><span style="color:#d08770;">yes
+</span><span style="color:#bf616a;">CanonicalizeHostname </span><span style="color:#d08770;">yes
 </span><span>
-</span><span style=color:#65737e># Include static list
-</span><span style=color:#bf616a>Include </span><span>static_canonical_domains.conf
+</span><span style="color:#65737e;"># Include static list
+</span><span style="color:#bf616a;">Include </span><span>static_canonical_domains.conf
 </span><span>
-</span><span style=color:#65737e># Include script generated list of CanonicalDomains
-</span><span style=color:#bf616a>Include </span><span>tmp/canonical_domains.conf
-</span></code></pre><p><code>tmp/canonical_domains.conf</code> is generated using <a href=https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh>ssh_canonicalization_gen.sh</a> when connecting to the company VPN.<p>It will transform the file into this:<pre data-lang=config style=background-color:#2b303b;color:#c0c5ce class=language-config><code class=language-config data-lang=config><span style=color:#bf616a>CanonicalDomains </span><span>internal.company.com historic.company.com
-</span></code></pre><p>This usage can be found in repository's example directory</section></article></main></div><footer><hr><nav style=float:right>Hugues |
-<a rel=me href=https://github.com/izissise class=social><img alt=github src=/social_icons/github.svg>
-</a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class=social><img alt=stack-overflow src=/social_icons/stack-overflow.svg>
-</a><a rel=me href=https://links.izissise.net/ class=social><img alt=shaarli src=/social_icons/shaarli.svg>
-</a><a rel=me href=matrix:@huguesm:izissise.net class=social><img alt=matrix src=/social_icons/matrix.svg>
-</a>| &#169; 2024</nav></footer>
+</span><span style="color:#65737e;"># Include script generated list of CanonicalDomains
+</span><span style="color:#bf616a;">Include </span><span>tmp/canonical_domains.conf
+</span></code></pre>
+<p><code>tmp/canonical_domains.conf</code> is generated using <a href="https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh">ssh_canonicalization_gen.sh</a> when connecting to the company VPN.</p>
+<p>It will transform the file into this:</p>
+<pre data-lang="config" style="background-color:#2b303b;color:#c0c5ce;" class="language-config "><code class="language-config" data-lang="config"><span style="color:#bf616a;">CanonicalDomains </span><span>internal.company.com historic.company.com
+</span></code></pre>
+<p>This usage can be found in repository's example directory</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+    </div>
+</body>
+
+<footer>
+<hr>
+<nav style="float: right;">
+    Hugues | 
+    <a rel="me" href="https:&#x2F;&#x2F;github.com&#x2F;izissise" class="social">
+        <img alt=github src="/social_icons/github.svg">
+    </a>
+    
+    <a rel="me" href="https:&#x2F;&#x2F;stackoverflow.com&#x2F;users&#x2F;2838914&#x2F;izissise" class="social">
+        <img alt=stack-overflow src="/social_icons/stack-overflow.svg">
+    </a>
+    
+    <a rel="me" href="https:&#x2F;&#x2F;links.izissise.net&#x2F;" class="social">
+        <img alt=shaarli src="/social_icons/shaarli.svg">
+    </a>
+    
+    <a rel="me" href="matrix:@huguesm:izissise.net" class="social">
+        <img alt=matrix src="/social_icons/matrix.svg">
+    </a>
+    
+    | &#169; 2024
+</nav>
+</footer>
+
+
+</html>
