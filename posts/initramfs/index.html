@@ -1,209 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<html class="dark light">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>" />
-
-    
-
-    
-    
-    
-    <title>
-         Initramfs
-        
-    </title>
-
-        
-            <meta property="og:title" content="Initramfs" />
-        
-     
-
-     
-         
-     
-
-     
-         
-    
-
-    
-        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
-    
-
-    
-    
-        
-        
-
-        <script data-goatcounter="https:/izissise.goatcounter.com/count" async src="/js/count.js"></script>
-        <noscript>
-            
-            <img style='display: none;' src="https://izissise.goatcounter.com/count?p=&#x2F;posts&#x2F;initramfs&#x2F;&t=Initramfs">
-        </noscript>
-    
-
-
-    
-
-    
-    <link rel="alternate" type="application/atom+xml" title="" href="/atom.xml">
-
-    <link rel="stylesheet" type="text/css" href=/theme/light.css />
-    <link id="darkModeStyle" rel="stylesheet" type="text/css" href="/theme/dark.css" />
-
-    <link rel="stylesheet" type="text/css" media="screen" href=/main.css />
-</head>
-
-
-<body>
-    <div class="content">
-        <header>
-    <div class="main">
-        <a href=&#x2F;></a>
-
-    </div>
-
-    <nav>
-        
-        <a href=&#x2F;posts style="margin-left: 0.7em">&#x2F;posts</a>
-        
-        <a href=&#x2F;about style="margin-left: 0.7em">&#x2F;about</a>
-        
-        |
-        <a id="dark-mode-toggle" onclick="toggleTheme(); event.preventDefault();" href="#">
-            <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
-        </a>
-        <script src=/js/themetoggle.js></script>
-    </nav>
-</header>
-
-
-
-
-        
-        
-    
-<main>
-    <article>
-        <div class="title">
-            
-            
-    <div class="page-header">
-        Initramfs
-    </div>
-
-
-                <div class="meta">
-                    
-                        Posted on <time>2024-02-08</time>
-                    
-
-                    
-                </div>
-        </div>
-
-        
-
-        
-        
-
-        <section class="body">
-            <h2 id="linux-basic-initramfs">Linux basic initramfs</h2>
-<p>Let us create an initramfs using the <a href="https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt">official documentation</a></p>
-<h2 id="initramfs-list">initramfs_list</h2>
-<p><code>initramfs_list</code> is a simple tool that takes an initramfs description and create the archive.</p>
-<h3 id="tool-compilation">Tool compilation</h3>
-<p>It needs some preparations, we need to files that can found in the kernel repository</p>
-<ul>
-<li><a href="https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_initramfs.sh">gen_initramfs.sh</a></li>
-<li><a href="https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c">gen_init_cpio.c</a></li>
-</ul>
-<p><code>gen_init_cpio.c</code> needs to be compiled</p>
-<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">gcc -o</span><span> gen_init_cpio gen_init_cpio.c
-</span></code></pre>
-<p><code>gen_initramfs_list.sh</code> make the assumption that <code>gen_init_cpio</code> is in a directory 'usr',
-lets assume the current directory instead</p>
-<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">sed -i -E </span><span>&quot;</span><span style="color:#a3be8c;">s|usr/gen_init_cpio|</span><span>$</span><span style="color:#a3be8c;">{</span><span style="color:#bf616a;">PWD</span><span style="color:#a3be8c;">}/gen_init_cpio|g</span><span>&quot; gen_initramfs.sh
-</span></code></pre>
-<p>Now we are ready to use it.</p>
-<h3 id="basic-initramfs">Basic Initramfs</h3>
-<p>We can describe a basic initramfs using the following</p>
-<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cat </span><span>&gt; cpio_list &lt;&lt;</span><span style="color:#b48ead;">EOF
-</span><span style="color:#a3be8c;">dir . 1755 0 0
-</span><span style="color:#a3be8c;">dir proc 1775 0 0
-</span><span style="color:#a3be8c;">dir dev 1775 0 0
-</span><span style="color:#a3be8c;">dir bin 1775 0 0
-</span><span style="color:#a3be8c;">dir sys 1775 0 0
-</span><span style="color:#a3be8c;">dir run 1775 0 0
-</span><span style="color:#a3be8c;">dir mnt 1775 0 0
-</span><span style="color:#a3be8c;">dir mntroot 1775 0 0
-</span><span style="color:#a3be8c;">dir dev/pts 1775 0 0
-</span><span style="color:#a3be8c;">dir dev/shm 1775 0 0
-</span><span style="color:#a3be8c;">dir dev/udev 1775 0 0
-</span><span style="color:#a3be8c;">nod dev/zero 1666 0 0 c 1 5
-</span><span style="color:#a3be8c;">nod dev/null 1666 0 0 c 1 3
-</span><span style="color:#a3be8c;">nod dev/console 1622 0 0 c 5 1
-</span><span style="color:#a3be8c;">nod dev/loop0 1644 0 0 b 7 0
-</span><span style="color:#a3be8c;">nod dev/ttyS0 1666 0 0 c 4 64
-</span><span style="color:#a3be8c;">nod dev/tty 1666 0 0 c 5 0
-</span><span style="color:#a3be8c;">nod dev/ptmx 1666 0 0 c 5 2
-</span><span style="color:#a3be8c;">nod dev/random 1444 0 0 c 1 8
-</span><span style="color:#a3be8c;">nod dev/urandom 1444 0 0 c 1 9
-</span><span style="color:#a3be8c;">slink dev/core /proc/kcore 1777 0 0
-</span><span style="color:#a3be8c;">slink dev/fd /proc/self/fd 1777 0 0
-</span><span style="color:#a3be8c;">slink dev/stdout /proc/self/fd/1 1777 0 0
-</span><span style="color:#a3be8c;">slink dev/stdin /proc/self/fd/0 1777 0 0
-</span><span style="color:#a3be8c;">slink dev/stderr /proc/self/fd/2 1777 0 0
-</span><span style="color:#a3be8c;">slink bin /sbin 1777 0 0
-</span><span style="color:#a3be8c;">slink init /bin/init 1777 0 0
-</span><span style="color:#a3be8c;">file bin/init initloader 0755 0 0
-</span><span style="color:#b48ead;">EOF
-</span></code></pre>
-<p>this is line separated description of the initramfs, each line start with a file type, path, permissions, major and minor.
+<!doctype html><html lang=en><html class="dark light"><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>"><title>Initramfs
+</title><meta property="og:title" content="Initramfs"><link rel=alternate type=application/atom+xml title=RSS href=/atom.xml><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com/count?p=/posts/initramfs/&t=Initramfs"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet href=/theme/light.css><link id=darkModeStyle rel=stylesheet href=/theme/dark.css><link rel=stylesheet media=screen href=/main.css><div class=content><header><div class=main><a href=/></a></div><nav><a href=/posts style=margin-left:.7em>/posts</a>
+<a href=/about style=margin-left:.7em>/about</a>
+|
+<a id=dark-mode-toggle onclick=toggleTheme(),event.preventDefault() href=#><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' stroke='black' stroke-width='1' fill='white' viewBox='0 0 24 24'><path d='M12 0C6 0 0 6 0 12s5 12 12 12 12-5 12-12S19 0 12 0Zm0 4c5 0 8 3 8 8s-3 8-8 8V4Z'/></svg>">
+</a><script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Initramfs</div><div class=meta>Posted on <time>2024-02-08</time></div></div><section class=body><h2 id=linux-basic-initramfs>Linux basic initramfs</h2><p>Let us create an initramfs using the <a href=https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt>official documentation</a><h2 id=initramfs-list>initramfs_list</h2><p><code>initramfs_list</code> is a simple tool that takes an initramfs description and create the archive.<h3 id=tool-compilation>Tool compilation</h3><p>It needs some preparations, we need to files that can found in the kernel repository<ul><li><a href=https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_initramfs.sh>gen_initramfs.sh</a><li><a href=https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c>gen_init_cpio.c</a></ul><p><code>gen_init_cpio.c</code> needs to be compiled<pre data-lang=bash style=background-color:#2b303b;color:#c0c5ce class=language-bash><code class=language-bash data-lang=bash><span style=color:#bf616a>gcc -o</span><span> gen_init_cpio gen_init_cpio.c
+</span></code></pre><p><code>gen_initramfs_list.sh</code> make the assumption that <code>gen_init_cpio</code> is in a directory 'usr',
+lets assume the current directory instead<pre data-lang=bash style=background-color:#2b303b;color:#c0c5ce class=language-bash><code class=language-bash data-lang=bash><span style=color:#bf616a>sed -i -E </span><span>&quot;</span><span style=color:#a3be8c>s|usr/gen_init_cpio|</span><span>$</span><span style=color:#a3be8c>{</span><span style=color:#bf616a>PWD</span><span style=color:#a3be8c>}/gen_init_cpio|g</span><span>&quot; gen_initramfs.sh
+</span></code></pre><p>Now we are ready to use it.<h3 id=basic-initramfs>Basic Initramfs</h3><p>We can describe a basic initramfs using the following<pre data-lang=bash style=background-color:#2b303b;color:#c0c5ce class=language-bash><code class=language-bash data-lang=bash><span style=color:#bf616a>cat </span><span>&gt; cpio_list &lt;&lt;</span><span style=color:#b48ead>EOF
+</span><span style=color:#a3be8c>dir . 1755 0 0
+</span><span style=color:#a3be8c>dir proc 1775 0 0
+</span><span style=color:#a3be8c>dir dev 1775 0 0
+</span><span style=color:#a3be8c>dir bin 1775 0 0
+</span><span style=color:#a3be8c>dir sys 1775 0 0
+</span><span style=color:#a3be8c>dir run 1775 0 0
+</span><span style=color:#a3be8c>dir mnt 1775 0 0
+</span><span style=color:#a3be8c>dir mntroot 1775 0 0
+</span><span style=color:#a3be8c>dir dev/pts 1775 0 0
+</span><span style=color:#a3be8c>dir dev/shm 1775 0 0
+</span><span style=color:#a3be8c>dir dev/udev 1775 0 0
+</span><span style=color:#a3be8c>nod dev/zero 1666 0 0 c 1 5
+</span><span style=color:#a3be8c>nod dev/null 1666 0 0 c 1 3
+</span><span style=color:#a3be8c>nod dev/console 1622 0 0 c 5 1
+</span><span style=color:#a3be8c>nod dev/loop0 1644 0 0 b 7 0
+</span><span style=color:#a3be8c>nod dev/ttyS0 1666 0 0 c 4 64
+</span><span style=color:#a3be8c>nod dev/tty 1666 0 0 c 5 0
+</span><span style=color:#a3be8c>nod dev/ptmx 1666 0 0 c 5 2
+</span><span style=color:#a3be8c>nod dev/random 1444 0 0 c 1 8
+</span><span style=color:#a3be8c>nod dev/urandom 1444 0 0 c 1 9
+</span><span style=color:#a3be8c>slink dev/core /proc/kcore 1777 0 0
+</span><span style=color:#a3be8c>slink dev/fd /proc/self/fd 1777 0 0
+</span><span style=color:#a3be8c>slink dev/stdout /proc/self/fd/1 1777 0 0
+</span><span style=color:#a3be8c>slink dev/stdin /proc/self/fd/0 1777 0 0
+</span><span style=color:#a3be8c>slink dev/stderr /proc/self/fd/2 1777 0 0
+</span><span style=color:#a3be8c>slink bin /sbin 1777 0 0
+</span><span style=color:#a3be8c>slink init /bin/init 1777 0 0
+</span><span style=color:#a3be8c>file bin/init initloader 0755 0 0
+</span><span style=color:#b48ead>EOF
+</span></code></pre><p>this is line separated description of the initramfs, each line start with a file type, path, permissions, major and minor.
 type <code>file</code> also takes an existing file as parameter, here we use it to set init binary (start program).
-type <code>slink</code> also take the symbolic link target path.</p>
-<p>We now have <code>cpio_list</code> file describing our initramfs.</p>
-<p>But we can't build it just yet, we also need create an init program.</p>
-
-        </section>
-
-        
-
-    </article>
-</main>
-
-
-    </div>
-</body>
-
-<footer>
-<hr>
-<nav style="float: right;">
-    Hugues | 
-    <a rel="me" href="https:&#x2F;&#x2F;github.com&#x2F;izissise" class="social">
-        <img alt=github src="/social_icons/github.svg">
-    </a>
-    
-    <a rel="me" href="https:&#x2F;&#x2F;stackoverflow.com&#x2F;users&#x2F;2838914&#x2F;izissise" class="social">
-        <img alt=stack-overflow src="/social_icons/stack-overflow.svg">
-    </a>
-    
-    <a rel="me" href="https:&#x2F;&#x2F;links.izissise.net&#x2F;" class="social">
-        <img alt=shaarli src="/social_icons/shaarli.svg">
-    </a>
-    
-    <a rel="me" href="matrix:@huguesm:izissise.net" class="social">
-        <img alt=matrix src="/social_icons/matrix.svg">
-    </a>
-    
-    | &#169; 2024
-</nav>
-</footer>
-
-
-</html>
+type <code>slink</code> also take the symbolic link target path.<p>We now have <code>cpio_list</code> file describing our initramfs.<p>But we can't build it just yet, we also need create an init program.</section></article></main></div><footer><hr><nav style=float:right>Hugues |
+<a rel=me href=https://github.com/izissise class=social><img alt=github src=/social_icons/github.svg>
+</a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class=social><img alt=stack-overflow src=/social_icons/stack-overflow.svg>
+</a><a rel=me href=https://links.izissise.net/ class=social><img alt=shaarli src=/social_icons/shaarli.svg>
+</a><a rel=me href=matrix:@huguesm:izissise.net class=social><img alt=matrix src=/social_icons/matrix.svg>
+</a>| &#169; 2024</nav></footer>
