@@ -1,62 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title/><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><generator uri="https://www.getzola.org/">Zola</generator><updated>2024-02-08T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Initramfs</title><published>2024-02-08T00:00:00+00:00</published><updated>2024-02-08T00:00:00+00:00</updated><author><name>
-Unknown</name></author><link rel="alternate" type="text/html" href="/posts/initramfs/"/><id>/posts/initramfs/</id><content type="html" xml:base="/posts/initramfs/">&lt;h2 id="linux-basic-initramfs">Linux basic initramfs&lt;/h2>
-&lt;p>Let us create an initramfs using the &lt;a href="https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt">official documentation&lt;/a>&lt;/p>
-&lt;h2 id="initramfs-list">initramfs_list&lt;/h2>
-&lt;p>&lt;code>initramfs_list&lt;/code> is a simple tool that takes an initramfs description and create the archive.&lt;/p>
-&lt;h3 id="tool-compilation">Tool compilation&lt;/h3>
-&lt;p>It needs some preparations, we need to files that can found in the kernel repository&lt;/p>
-&lt;ul>
-&lt;li>&lt;a href="https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_initramfs.sh">gen_initramfs.sh&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c">gen_init_cpio.c&lt;/a>&lt;/li>
-&lt;/ul>
-&lt;p>&lt;code>gen_init_cpio.c&lt;/code> needs to be compiled&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#bf616a;">gcc -o&lt;/span>&lt;span> gen_init_cpio gen_init_cpio.c
-&lt;/span>&lt;/code>&lt;/pre>
-&lt;p>&lt;code>gen_initramfs_list.sh&lt;/code> make the assumption that &lt;code>gen_init_cpio&lt;/code> is in a directory 'usr',
-lets assume the current directory instead&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#bf616a;">sed -i -E &lt;/span>&lt;span>&amp;quot;&lt;/span>&lt;span style="color:#a3be8c;">s|usr/gen_init_cpio|&lt;/span>&lt;span>$&lt;/span>&lt;span style="color:#a3be8c;">{&lt;/span>&lt;span style="color:#bf616a;">PWD&lt;/span>&lt;span style="color:#a3be8c;">}/gen_init_cpio|g&lt;/span>&lt;span>&amp;quot; gen_initramfs.sh
-&lt;/span>&lt;/code>&lt;/pre>
-&lt;p>Now we are ready to use it.&lt;/p>
-&lt;h3 id="basic-initramfs">Basic Initramfs&lt;/h3>
-&lt;p>We can describe a basic initramfs using the following&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#bf616a;">cat &lt;/span>&lt;span>&amp;gt; cpio_list &amp;lt;&amp;lt;&lt;/span>&lt;span style="color:#b48ead;">EOF
-&lt;/span>&lt;span style="color:#a3be8c;">dir . 1755 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir proc 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir dev 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir bin 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir sys 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir run 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir mnt 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir mntroot 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir dev/pts 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir dev/shm 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">dir dev/udev 1775 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/zero 1666 0 0 c 1 5
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/null 1666 0 0 c 1 3
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/console 1622 0 0 c 5 1
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/loop0 1644 0 0 b 7 0
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/ttyS0 1666 0 0 c 4 64
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/tty 1666 0 0 c 5 0
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/ptmx 1666 0 0 c 5 2
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/random 1444 0 0 c 1 8
-&lt;/span>&lt;span style="color:#a3be8c;">nod dev/urandom 1444 0 0 c 1 9
-&lt;/span>&lt;span style="color:#a3be8c;">slink dev/core /proc/kcore 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink dev/fd /proc/self/fd 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink dev/stdout /proc/self/fd/1 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink dev/stdin /proc/self/fd/0 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink dev/stderr /proc/self/fd/2 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink bin /sbin 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">slink init /bin/init 1777 0 0
-&lt;/span>&lt;span style="color:#a3be8c;">file bin/init initloader 0755 0 0
-&lt;/span>&lt;span style="color:#b48ead;">EOF
-&lt;/span>&lt;/code>&lt;/pre>
-&lt;p>this is line separated description of the initramfs, each line start with a file type, path, permissions, major and minor.
-type &lt;code>file&lt;/code> also takes an existing file as parameter, here we use it to set init binary (start program).
-type &lt;code>slink&lt;/code> also take the symbolic link target path.&lt;/p>
-&lt;p>We now have &lt;code>cpio_list&lt;/code> file describing our initramfs.&lt;/p>
-&lt;p>But we can't build it just yet, we also need create an init program.&lt;/p></content></entry><entry xml:lang="en"><title>Parallel bash function call</title><published>2022-01-15T00:00:00+00:00</published><updated>2022-01-15T00:00:00+00:00</updated><author><name>
-Unknown</name></author><link rel="alternate" type="text/html" href="/posts/parallel-and-bash-function/"/><id>/posts/parallel-and-bash-function/</id><content type="html" xml:base="/posts/parallel-and-bash-function/">&lt;h1 id="introduction">Introduction&lt;/h1>
-&lt;p>Now that we can execute &lt;a href="/remote_bash_func_ssh">bash functions remotly&lt;/a>, we can scale the execution using &lt;a href="https://www.gnu.org/software/parallel/">GNU Parallel&lt;/a>.&lt;/p>
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-02-23T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Parallel bash function call</title><published>2022-01-15T00:00:00+00:00</published><updated>2022-01-15T00:00:00+00:00</updated><author><name>
+Unknown</name></author><link rel="alternate" type="text/html" href="/posts/parallel_and_bash_function/"/><id>/posts/parallel_and_bash_function/</id><content type="html" xml:base="/posts/parallel_and_bash_function/">&lt;h1 id="introduction">Introduction&lt;/h1>
+&lt;p>Now that we can execute &lt;a href="/remote_bash_func_ssh">bash functions remotly&lt;/a>, we can scale the execution using &lt;a rel="noopener" target="_blank" href="https://www.gnu.org/software/parallel/">GNU Parallel&lt;/a>.&lt;/p>
 &lt;p>When one wants to make a change or retrieve one particular piece of information on a whole set of machines, multiple choice are available (ansible, puppet, pssh, consul, ...) each with their own upsides and downsides.&lt;/p>
 &lt;p>Parallel + ssh + func can give a combination of upsides that I haven't seen elsewhere:&lt;/p>
 &lt;ul>
@@ -67,53 +11,53 @@ Unknown</name></author><link rel="alternate" type="text/html" href="/posts/paral
 &lt;li>Use shell tools that you already know&lt;/li>
 &lt;/ul>
 &lt;p>For example in fifteen seconds we're able to retrieve 1448 host kernel versions:&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#bf616a;">$&lt;/span>&lt;span> kernel_version() { &lt;/span>&lt;span style="color:#bf616a;">uname -r &lt;/span>&lt;span>| &lt;/span>&lt;span style="color:#bf616a;">sed &lt;/span>&lt;span>&amp;#39;&lt;/span>&lt;span style="color:#a3be8c;">s/\([0-9].[0-9]*\).*/\1/&lt;/span>&lt;span>&amp;#39;; }
-&lt;/span>&lt;span style="color:#bf616a;">$&lt;/span>&lt;span> time parallel_host_list_ssh_func hosts.txt kernel_version&lt;/span>&lt;span style="color:#bf616a;"> -j&lt;/span>&lt;span> 250 | &lt;/span>&lt;span style="color:#bf616a;">sort &lt;/span>&lt;span>| &lt;/span>&lt;span style="color:#bf616a;">uniq -c &lt;/span>&lt;span>| &lt;/span>&lt;span style="color:#bf616a;">sort -n
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">2&lt;/span>&lt;span> 5.17
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">467&lt;/span>&lt;span> 5.23
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">979&lt;/span>&lt;span> 5.12
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#bf616a;">real&lt;/span>&lt;span> 0m15,380s
-&lt;/span>&lt;span style="color:#bf616a;">user&lt;/span>&lt;span> 0m49,900s
-&lt;/span>&lt;span style="color:#bf616a;">sys&lt;/span>&lt;span> 0m26,688s
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">$&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> kernel_version(&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>) &lt;span class="z-punctuation z-definition z-compound z-braces z-begin z-shell">{&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">uname&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>r&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">sed&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>s/\([0-9].[0-9]*\).*/\1/&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span> &lt;span class="z-punctuation z-definition z-compound z-braces z-end z-shell">}&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">$&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> time parallel_host_list_ssh_func hosts.txt kernel_version&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>j&lt;/span> 250&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">sort&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">uniq&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>c&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">sort&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>n&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">2&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 5.17&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">467&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 5.23&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">979&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 5.12&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">real&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0m15,380s&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">user&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0m49,900s&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">sys&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0m26,688s&lt;/span>
 &lt;/span>&lt;/code>&lt;/pre>
 &lt;h1 id="where">Where&lt;/h1>
-&lt;p>You can find an helper functions here: &lt;a href="https://github.com/izissise/shell_utils/blob/main/parallel_helpers.bash">shell_utils&lt;/a>, you need to copy the functions into your &lt;code>~/.bash_aliases&lt;/code>.&lt;/p></content></entry><entry xml:lang="en"><title>Remote bash function with ssh</title><published>2021-03-08T00:00:00+00:00</published><updated>2021-03-08T00:00:00+00:00</updated><author><name>
-Unknown</name></author><link rel="alternate" type="text/html" href="/posts/remote-bash-func-ssh/"/><id>/posts/remote-bash-func-ssh/</id><content type="html" xml:base="/posts/remote-bash-func-ssh/">&lt;h1 id="genesis">Genesis&lt;/h1>
+&lt;p>You can find an helper functions here: &lt;a rel="noopener" target="_blank" href="https://github.com/izissise/shell_utils/blob/main/parallel_helpers.bash">shell_utils&lt;/a>, you need to copy the functions into your &lt;code>~/.bash_aliases&lt;/code>.&lt;/p></content></entry><entry xml:lang="en"><title>Remote bash function with ssh</title><published>2021-03-08T00:00:00+00:00</published><updated>2021-03-08T00:00:00+00:00</updated><author><name>
+Unknown</name></author><link rel="alternate" type="text/html" href="/posts/remote_bash_func_ssh/"/><id>/posts/remote_bash_func_ssh/</id><content type="html" xml:base="/posts/remote_bash_func_ssh/">&lt;h1 id="genesis">Genesis&lt;/h1>
 &lt;p>Often when a shell command line start to become a little long,
 I like to break it down into functions.&lt;/p>
 &lt;p>But things start to get complicated when it involve a remote host.&lt;/p>
 &lt;p>It usually involve spawning a remote shell with ssh and then double escaping lot of characters (ssh and remote shell) in order to properly execute commands.&lt;/p>
 &lt;p>Another solution exist though and it's usage it really simple, just write your commands in a function and pass it's name to a magic wrapper that will on remote host re-export it.&lt;/p>
 &lt;h1 id="how">How&lt;/h1>
-&lt;p>Has show in this excellent &lt;a href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video&lt;/a>, &lt;code>bash&lt;/code> has a &lt;code>declare&lt;/code> builtin that can re-export local function into string (automatically taking care of escaping).&lt;/p>
+&lt;p>Has show in this excellent &lt;a rel="noopener" target="_blank" href="https://www.youtube.com/watch?v=uqHjc7hlqd0">video&lt;/a>, &lt;code>bash&lt;/code> has a &lt;code>declare&lt;/code> builtin that can re-export local function into string (automatically taking care of escaping).&lt;/p>
 &lt;p>Thus one can pass these generated string to &lt;code>ssh&lt;/code>, so functions are re-exported on remote hosts.&lt;/p>
 &lt;p>Also &lt;code>bash&lt;/code> support nested function, you can create and export namespaces this way:&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#8fa1b3;">namespace&lt;/span>&lt;span>() {
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#8fa1b3;">func2&lt;/span>&lt;span>() {
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">ls
-&lt;/span>&lt;span> }
-&lt;/span>&lt;span>
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#8fa1b3;">func1&lt;/span>&lt;span>() {
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">func2
-&lt;/span>&lt;span> }
-&lt;/span>&lt;span>
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">func1
-&lt;/span>&lt;span>}
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#bf616a;">func&lt;/span>&lt;span>=&amp;quot;&lt;/span>&lt;span style="color:#a3be8c;">namespace&lt;/span>&lt;span>&amp;quot;
-&lt;/span>&lt;span style="color:#bf616a;">ssh&lt;/span>&lt;span> host &amp;quot;$&lt;/span>&lt;span style="color:#a3be8c;">(&lt;/span>&lt;span style="color:#b48ead;">declare &lt;/span>&lt;span style="color:#bf616a;">-f $func&lt;/span>&lt;span>;&lt;/span>&lt;span style="color:#a3be8c;">); &lt;/span>&lt;span>$&lt;/span>&lt;span style="color:#bf616a;">func&lt;/span>&lt;span>&amp;quot;
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-entity z-name z-function z-shell">namespace&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span> &lt;span class="z-punctuation z-section z-braces z-begin z-shell">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-entity z-name z-function z-shell">func2&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span> &lt;span class="z-punctuation z-section z-braces z-begin z-shell">{&lt;/span>
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">ls&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-punctuation z-section z-braces z-end z-shell">}&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-entity z-name z-function z-shell">func1&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span> &lt;span class="z-punctuation z-section z-braces z-begin z-shell">{&lt;/span>
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">func2&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-punctuation z-section z-braces z-end z-shell">}&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">func1&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-punctuation z-section z-braces z-end z-shell">}&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-variable z-other z-readwrite z-assignment z-shell">func&lt;/span>&lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span>&lt;span class="z-string z-unquoted z-shell">&lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>namespace&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">ssh&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> host &lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-storage z-modifier z-shell">declare&lt;/span> &lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell">-&lt;/span>f&lt;/span> &lt;span class="z-variable z-other z-readwrite z-assignment z-shell">$func&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span>; &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">func&lt;/span>&lt;/span>&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;/span>
 &lt;/span>&lt;/code>&lt;/pre>
 &lt;h1 id="why">Why&lt;/h1>
 &lt;p>bash and ssh are ubiquitous and existed for a long time. Plus the shell will allow you to run virtually anything on the remote system.&lt;/p>
 &lt;h1 id="where">Where&lt;/h1>
-&lt;p>You can find an helper function here: &lt;a href="https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash">shell_utils&lt;/a>, you need to copy the function into your &lt;code>~/.bash_aliases&lt;/code>.&lt;/p>
+&lt;p>You can find an helper function here: &lt;a rel="noopener" target="_blank" href="https://github.com/izissise/shell_utils/blob/main/ssh_exec_func.bash">shell_utils&lt;/a>, you need to copy the function into your &lt;code>~/.bash_aliases&lt;/code>.&lt;/p>
 &lt;p>It export &lt;code>ssh_exec_func&lt;/code>:&lt;/p>
-&lt;pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash ">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#8fa1b3;">do_stuff&lt;/span>&lt;span>() {
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#96b5b4;">echo &lt;/span>&lt;span>$&lt;/span>&lt;span style="color:#bf616a;">1
-&lt;/span>&lt;span> &lt;/span>&lt;span style="color:#bf616a;">hostname
-&lt;/span>&lt;span>}
-&lt;/span>&lt;span style="color:#bf616a;">ssh_exec_func&lt;/span>&lt;span> host -- do_stuff hello
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-entity z-name z-function z-shell">do_stuff&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span> &lt;span class="z-punctuation z-section z-braces z-begin z-shell">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-echo z-shell">echo&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">1&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell"> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">hostname&lt;/span>&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function z-shell">&lt;span class="z-punctuation z-section z-braces z-end z-shell">}&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">ssh_exec_func&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> host&lt;span class="z-keyword z-operator z-end-of-options z-shell"> --&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> do_stuff hello&lt;/span>
 &lt;/span>&lt;/code>&lt;/pre>
 &lt;h1 id="more">More&lt;/h1>
 &lt;p>Stay tuned for a post that'll push this concept further.&lt;/p></content></entry><entry xml:lang="en"><title>Network manager connection action</title><published>2021-03-06T00:00:00+00:00</published><updated>2021-03-06T00:00:00+00:00</updated><author><name>
@@ -122,31 +66,31 @@ Unknown</name></author><link rel="alternate" type="text/html" href="/posts/netwo
 &lt;p>Maybe you work for multiple companies and you want to setup and run some program when connecting to their VPN.&lt;/p>
 &lt;p>You could setup an up rule on your openvpn configuration but it would run as root, and only works for openvpn.&lt;/p>
 &lt;p>Why if instead you could have a program that watches network-manager events and run pre-specified commands?&lt;/p>
-&lt;p>Look no more and go check-out &lt;a href="https://github.com/izissise/network-manager-connection-action">network-manager-connection-action&lt;/a>.&lt;/p>
+&lt;p>Look no more and go check-out &lt;a rel="noopener" target="_blank" href="https://github.com/izissise/network-manager-connection-action">network-manager-connection-action&lt;/a>.&lt;/p>
 &lt;h2 id="how">How&lt;/h2>
 &lt;p>This program is written in Rust and uses Tokio projects to connect to dbus and listen for event from network-manager, if an event come from a connection for which the UUID exist in config file, it runs the associated command.&lt;/p>
 &lt;h2 id="ssh-canonicalization-usage">SSH canonicalization usage&lt;/h2>
-&lt;p>I personally been using this program to automatically setup &lt;a href="https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html">ssh canonicalization&lt;/a> on the company search domains when connecting to the VPN.&lt;/p>
+&lt;p>I personally been using this program to automatically setup &lt;a rel="noopener" target="_blank" href="https://dotfiles.tnetconsulting.net/articles/2016/0109/ssh-canonicalization.html">ssh canonicalization&lt;/a> on the company search domains when connecting to the VPN.&lt;/p>
 &lt;p>With the following ssh configuration at the top:&lt;/p>
-&lt;pre data-lang="config" style="background-color:#2b303b;color:#c0c5ce;" class="language-config ">&lt;code class="language-config" data-lang="config">&lt;span style="color:#65737e;">##################
-&lt;/span>&lt;span style="color:#65737e;">#Canonicalization#
-&lt;/span>&lt;span style="color:#65737e;">##################
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#65737e;"># Don&amp;#39;t canonicalize host with dots (assume there are already full hostname)
-&lt;/span>&lt;span style="color:#bf616a;">CanonicalizeMaxDots &lt;/span>&lt;span style="color:#d08770;">0
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#65737e;"># Fallback to local name Resolution in any case
-&lt;/span>&lt;span style="color:#bf616a;">CanonicalizeFallbackLocal &lt;/span>&lt;span style="color:#d08770;">yes
-&lt;/span>&lt;span style="color:#bf616a;">CanonicalizeHostname &lt;/span>&lt;span style="color:#d08770;">yes
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#65737e;"># Include static list
-&lt;/span>&lt;span style="color:#bf616a;">Include &lt;/span>&lt;span>static_canonical_domains.conf
-&lt;/span>&lt;span>
-&lt;/span>&lt;span style="color:#65737e;"># Include script generated list of CanonicalDomains
-&lt;/span>&lt;span style="color:#bf616a;">Include &lt;/span>&lt;span>tmp/canonical_domains.conf
+&lt;pre data-lang="config" class="language-config z-code">&lt;code class="language-config" data-lang="config">&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig">##################
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig">#Canonicalization#
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig">##################
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">
+&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig"># Don&amp;#39;t canonicalize host with dots (assume there are already full hostname)
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">CanonicalizeMaxDots&lt;/span> &lt;/span>&lt;span class="z-constant z-numeric z-genconfig">0&lt;/span>
+&lt;/span>&lt;span class="z-source z-genconfig">
+&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig"># Fallback to local name Resolution in any case
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">CanonicalizeFallbackLocal&lt;/span> &lt;/span>&lt;span class="z-constant z-language z-genconfig">yes&lt;/span>
+&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">CanonicalizeHostname&lt;/span> &lt;/span>&lt;span class="z-constant z-language z-genconfig">yes&lt;/span>
+&lt;/span>&lt;span class="z-source z-genconfig">
+&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig"># Include static list
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">Include&lt;/span> &lt;/span>static_canonical_domains&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>conf
+&lt;/span>&lt;span class="z-source z-genconfig">
+&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-comment z-genconfig">&lt;span class="z-comment z-line z-number-sign z-genconfig"># Include script generated list of CanonicalDomains
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">Include&lt;/span> &lt;/span>&lt;span class="z-support z-type z-genconfig">tmp/canonical_domains.conf&lt;/span>
 &lt;/span>&lt;/code>&lt;/pre>
-&lt;p>&lt;code>tmp/canonical_domains.conf&lt;/code> is generated using &lt;a href="https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh">ssh_canonicalization_gen.sh&lt;/a> when connecting to the company VPN.&lt;/p>
+&lt;p>&lt;code>tmp/canonical_domains.conf&lt;/code> is generated using &lt;a rel="noopener" target="_blank" href="https://github.com/izissise/network-manager-connection-action/blob/master/example/ssh_canonicalization_gen.sh">ssh_canonicalization_gen.sh&lt;/a> when connecting to the company VPN.&lt;/p>
 &lt;p>It will transform the file into this:&lt;/p>
-&lt;pre data-lang="config" style="background-color:#2b303b;color:#c0c5ce;" class="language-config ">&lt;code class="language-config" data-lang="config">&lt;span style="color:#bf616a;">CanonicalDomains &lt;/span>&lt;span>internal.company.com historic.company.com
+&lt;pre data-lang="config" class="language-config z-code">&lt;code class="language-config" data-lang="config">&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig">&lt;span class="z-variable z-parameter z-genconfig">CanonicalDomains&lt;/span> &lt;/span>internal&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>company&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>com historic&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>company&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>com
 &lt;/span>&lt;/code>&lt;/pre>
 &lt;p>This usage can be found in repository's example directory&lt;/p></content></entry></feed>
