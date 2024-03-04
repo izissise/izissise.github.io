@@ -1,4 +1,498 @@
-<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-02-23T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Parallel bash function call</title><published>2022-01-15T00:00:00+00:00</published><updated>2022-01-15T00:00:00+00:00</updated><author><name>
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-02-23T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Initramfs</title><published>2024-03-03T00:00:00+00:00</published><updated>2024-03-03T00:00:00+00:00</updated><author><name>
+Unknown</name></author><link rel="alternate" type="text/html" href="/posts/initramfs/"/><id>/posts/initramfs/</id><content type="html" xml:base="/posts/initramfs/">&lt;h1 id="linux-basic-initramfs">Linux basic initramfs&lt;/h1>
+&lt;p>With a compiled kernel image, it can be useful to load your own &lt;a rel="noopener" target="_blank" href="https://en.wikipedia.org/wiki/Initial_ramdisk">initramfs&lt;/a>:&lt;/p>
+&lt;ul>
+&lt;li>make it as small as possible considering the features you need&lt;/li>
+&lt;li>create a minimal test environment for the kernel image&lt;/li>
+&lt;li>mount a remote filesystem as the root&lt;/li>
+&lt;li>your own reason&lt;/li>
+&lt;/ul>
+&lt;p>Anyways, with the &lt;a rel="noopener" target="_blank" href="https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt">official documentation&lt;/a> help,
+let's create an initramfs.&lt;/p>
+&lt;h1 id="tool-compilation">Tool compilation&lt;/h1>
+&lt;p>We need to gen_init_cpio tool that can found in the kernel repository:&lt;/p>
+&lt;ul>
+&lt;li>&lt;a rel="noopener" target="_blank" href="https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c">gen_init_cpio.c&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;p>&lt;code>gen_init_cpio.c&lt;/code> needs to be compiled:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">wget&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>O&lt;/span> gen_init_cpio.c &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">gcc&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>o&lt;/span> gen_init_cpio gen_init_cpio.c&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;p>Now it is ready for use.&lt;/p>
+&lt;h1 id="init-hello-world">Init hello world&lt;/h1>
+&lt;p>Let's create an hello world init program that the kernel can execute to show that everything works correctly:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-printf z-shell">printf&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>%s\n&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>#include &amp;lt;stdio.h&amp;gt;&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>#include &amp;lt;unistd.h&amp;gt;&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>int main() { printf(&amp;quot;Hello world!\n&amp;quot;); sleep(999999999); }&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">gcc&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>fpic&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>static&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>xc&lt;/span> -&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>o&lt;/span> init&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;h1 id="basic-initramfs">Basic Initramfs&lt;/h1>
+&lt;p>Here is a basic initramfs description, we give it to &lt;code>gen_init_cpio&lt;/code> directly:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">./gen_init_cpio&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>t&lt;/span> 0&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>c&lt;/span> - &lt;span class="z-keyword z-operator z-assignment z-redirection z-shell">&amp;gt;&lt;/span> initramfs.cpio &lt;span class="z-string z-unquoted z-heredoc z-shell">&lt;span class="z-keyword z-operator z-assignment z-redirection z-shell">&amp;lt;&amp;lt;&lt;/span>&lt;span class="z-keyword z-control z-heredoc-token z-shell">EOF&lt;/span>&lt;/span>&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># this is a file containing newline separated entries that
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># describe the files to be included in the initramfs archive:
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># # a comment
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># file &amp;lt;name&amp;gt; &amp;lt;location&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt; [&amp;lt;hard links&amp;gt;]
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># dir &amp;lt;name&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># nod &amp;lt;name&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt; &amp;lt;dev_type&amp;gt; &amp;lt;maj&amp;gt; &amp;lt;min&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># slink &amp;lt;name&amp;gt; &amp;lt;target&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># pipe &amp;lt;name&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># sock &amp;lt;name&amp;gt; &amp;lt;mode&amp;gt; &amp;lt;uid&amp;gt; &amp;lt;gid&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># Root directory
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir . 1755 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># common directories
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir proc 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir dev 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir bin 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir sys 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir run 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir mnt 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir etc 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># symlink /sbin -&amp;gt; /bin
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink bin /sbin 1744 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># common devices
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir dev/pts 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir dev/shm 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">dir dev/udev 1775 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/zero 1666 0 0 c 1 5
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/null 1666 0 0 c 1 3
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/console 1622 0 0 c 5 1
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/loop0 1644 0 0 b 7 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/ttyS0 1666 0 0 c 4 64
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/tty 1666 0 0 c 5 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/ptmx 1666 0 0 c 5 2
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/random 1444 0 0 c 1 8
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">nod dev/urandom 1444 0 0 c 1 9
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink dev/core /proc/kcore 1777 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink dev/fd /proc/self/fd 1777 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink dev/stdout /proc/self/fd/1 1777 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink dev/stdin /proc/self/fd/0 1777 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">slink dev/stderr /proc/self/fd/2 1777 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># include previously compiled init
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell"># make sure the path is /init
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">file /init init 0755 0 0
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-string z-unquoted z-heredoc z-shell">&lt;span class="z-keyword z-control z-heredoc-token z-shell">EOF&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;p>The line starting with &lt;code>file&lt;/code> takes an external file as a second parameter, and that's how we include the &lt;code>init&lt;/code> program in the archive.&lt;/p>
+&lt;p>Note this is rootless, we don't need to re-create the filesystem tree locally or use fakeroot to create special file in the archive.&lt;/p>
+&lt;p>If you're following along, you now have created &lt;code>initramfs.cpio&lt;/code> archive!&lt;/p>
+&lt;h1 id="test-with-qemu">Test with Qemu&lt;/h1>
+&lt;p>With our initramfs we just need a linux kernel to be able to run it in qemu:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">qemu-system-&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{&lt;/span>&lt;/span>&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-variable z-other z-readwrite z-shell">HOSTTYPE&lt;/span>&lt;/span>&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>kernel&lt;/span> vmlinuz-6.7.5-060705-generic&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>initrd&lt;/span> initramfs.cpio&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>append&lt;/span> &lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>console=ttyS0&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>cpu&lt;/span> max&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>m&lt;/span> 128M&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>nographic&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>serial&lt;/span> mon:stdio&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>nodefaults &lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> Press CTRL+a CTRL+x to quit qemu&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>
+&lt;p>You can find pre-compiled kernel image in &lt;a rel="noopener" target="_blank" href="https://kernel.ubuntu.com/mainline/?C=M;O=D">ubuntu repository&lt;/a>&lt;/p>
+&lt;details>
+&lt;summary>
+Qemu output
+&lt;/summary>
+&lt;div>
+&lt;pre data-lang="tty" class="language-tty z-code">&lt;code class="language-tty" data-lang="tty">&lt;span class="z-text z-plain">[ 0.000000] Linux version 6.7.5-060705-generic (kernel@kathleen) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #202402161836 SMP PREEMPT_DYNAMIC Fri Feb 16 19:10:40 UTC 2024
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] Command line: console=ttyS0
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] KERNEL supported cpus:
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] Intel GenuineIntel
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] AMD AuthenticAMD
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] Hygon HygonGenuine
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] Centaur CentaurHauls
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] zhaoxin Shanghai
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-provided physical RAM map:
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x0000000000100000-0x0000000007fdffff] usable
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x0000000007fe0000-0x0000000007ffffff] reserved
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] NX (Execute Disable) protection: active
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] APIC: Static calls initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] SMBIOS 2.8 present.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] DMI: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.15.0-1 04/01/2014
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] tsc: Fast TSC calibration using PIT
+&lt;/span>&lt;span class="z-text z-plain">[ 0.000000] tsc: Detected 1991.977 MHz processor
+&lt;/span>&lt;span class="z-text z-plain">[ 0.012976] AGP: No AGP bridge found
+&lt;/span>&lt;span class="z-text z-plain">[ 0.013376] last_pfn = 0x7fe0 max_arch_pfn = 0x10000000000
+&lt;/span>&lt;span class="z-text z-plain">[ 0.014585] MTRR map: 4 entries (3 fixed + 1 variable; max 19), built from 8 variable MTRRs
+&lt;/span>&lt;span class="z-text z-plain">[ 0.014969] x86/PAT: Configuration [0-7]: WB WC UC- UC WB WP UC- WT
+&lt;/span>&lt;span class="z-text z-plain">[ 0.046182] found SMP MP-table at [mem 0x000f5ba0-0x000f5baf]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.048966] Using GB pages for direct mapping
+&lt;/span>&lt;span class="z-text z-plain">[ 0.055323] RAMDISK: [mem 0x07f03000-0x07fdffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.056335] ACPI: Early table checksum verification disabled
+&lt;/span>&lt;span class="z-text z-plain">[ 0.057050] ACPI: RSDP 0x00000000000F59E0 000014 (v00 BOCHS )
+&lt;/span>&lt;span class="z-text z-plain">[ 0.057572] ACPI: RSDT 0x0000000007FE189C 000034 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.058711] ACPI: FACP 0x0000000007FE1750 000074 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.059919] ACPI: DSDT 0x0000000007FE0040 001710 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060098] ACPI: FACS 0x0000000007FE0000 000040
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060224] ACPI: APIC 0x0000000007FE17C4 000078 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060300] ACPI: HPET 0x0000000007FE183C 000038 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060368] ACPI: WAET 0x0000000007FE1874 000028 (v01 BOCHS BXPC 00000001 BXPC 00000001)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060565] ACPI: Reserving FACP table memory at [mem 0x7fe1750-0x7fe17c3]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060606] ACPI: Reserving DSDT table memory at [mem 0x7fe0040-0x7fe174f]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060625] ACPI: Reserving FACS table memory at [mem 0x7fe0000-0x7fe003f]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060640] ACPI: Reserving APIC table memory at [mem 0x7fe17c4-0x7fe183b]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060654] ACPI: Reserving HPET table memory at [mem 0x7fe183c-0x7fe1873]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.060668] ACPI: Reserving WAET table memory at [mem 0x7fe1874-0x7fe189b]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.064875] No NUMA configuration found
+&lt;/span>&lt;span class="z-text z-plain">[ 0.064920] Faking a node at [mem 0x0000000000000000-0x0000000007fdffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.066165] NODE_DATA(0) allocated [mem 0x07ed8000-0x07f02fff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.072800] Zone ranges:
+&lt;/span>&lt;span class="z-text z-plain">[ 0.072856] DMA [mem 0x0000000000001000-0x0000000000ffffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073020] DMA32 [mem 0x0000000001000000-0x0000000007fdffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073051] Normal empty
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073091] Device empty
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073122] Movable zone start for each node
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073180] Early memory node ranges
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073229] node 0: [mem 0x0000000000001000-0x000000000009efff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073491] node 0: [mem 0x0000000000100000-0x0000000007fdffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.073835] Initmem setup node 0 [mem 0x0000000000001000-0x0000000007fdffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.075689] On node 0, zone DMA: 1 pages in unavailable ranges
+&lt;/span>&lt;span class="z-text z-plain">[ 0.076152] On node 0, zone DMA: 97 pages in unavailable ranges
+&lt;/span>&lt;span class="z-text z-plain">[ 0.077918] On node 0, zone DMA32: 32 pages in unavailable ranges
+&lt;/span>&lt;span class="z-text z-plain">[ 0.078954] ACPI: PM-Timer IO Port: 0x608
+&lt;/span>&lt;span class="z-text z-plain">[ 0.079974] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+&lt;/span>&lt;span class="z-text z-plain">[ 0.081216] IOAPIC[0]: apic_id 0, version 32, address 0xfec00000, GSI 0-23
+&lt;/span>&lt;span class="z-text z-plain">[ 0.081555] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.082421] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.082601] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.082878] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.082920] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.083522] ACPI: Using ACPI (MADT) for SMP configuration information
+&lt;/span>&lt;span class="z-text z-plain">[ 0.083610] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+&lt;/span>&lt;span class="z-text z-plain">[ 0.084086] smpboot: Allowing 1 CPUs, 0 hotplug CPUs
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085383] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085470] PM: hibernation: Registered nosave memory: [mem 0x0009f000-0x0009ffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085524] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000effff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085542] PM: hibernation: Registered nosave memory: [mem 0x000f0000-0x000fffff]
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085743] [mem 0x08000000-0xfffbffff] available for PCI devices
+&lt;/span>&lt;span class="z-text z-plain">[ 0.085849] Booting paravirtualized kernel on bare hardware
+&lt;/span>&lt;span class="z-text z-plain">[ 0.086334] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645519600211568 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 0.087922] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:1 nr_cpu_ids:1 nr_node_ids:1
+&lt;/span>&lt;span class="z-text z-plain">[ 0.092926] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u2097152
+&lt;/span>&lt;span class="z-text z-plain">[ 0.096234] Kernel command line: console=ttyS0
+&lt;/span>&lt;span class="z-text z-plain">[ 0.100225] random: crng init done
+&lt;/span>&lt;span class="z-text z-plain">[ 0.100790] Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.101020] Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.108746] Fallback order for Node 0: 0
+&lt;/span>&lt;span class="z-text z-plain">[ 0.109901] Built 1 zonelists, mobility grouping on. Total pages: 31968
+&lt;/span>&lt;span class="z-text z-plain">[ 0.109991] Policy zone: DMA32
+&lt;/span>&lt;span class="z-text z-plain">[ 0.111499] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+&lt;/span>&lt;span class="z-text z-plain">[ 0.111864] AGP: Checking aperture...
+&lt;/span>&lt;span class="z-text z-plain">[ 0.115538] AGP: No AGP bridge found
+&lt;/span>&lt;span class="z-text z-plain">[ 0.125728] Memory: 75800K/130552K available (20480K kernel code, 4395K rwdata, 13416K rodata, 4860K init, 4904K bss, 54548K reserved, 0K cma-reserved)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.148682] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+&lt;/span>&lt;span class="z-text z-plain">[ 0.154969] ftrace: allocating 55956 entries in 219 pages
+&lt;/span>&lt;span class="z-text z-plain">[ 0.284641] ftrace: allocated 219 pages with 6 groups
+&lt;/span>&lt;span class="z-text z-plain">[ 0.304656] Dynamic Preempt: voluntary
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311404] rcu: Preemptible hierarchical RCU implementation.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311492] rcu: RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=1.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311695] Trampoline variant of Tasks RCU enabled.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311718] Rude variant of Tasks RCU enabled.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311733] Tracing variant of Tasks RCU enabled.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311925] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.311977] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+&lt;/span>&lt;span class="z-text z-plain">[ 0.355084] NR_IRQS: 524544, nr_irqs: 256, preallocated irqs: 16
+&lt;/span>&lt;span class="z-text z-plain">[ 0.371909] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+&lt;/span>&lt;span class="z-text z-plain">[ 0.381659] Console: colour *CGA 80x25
+&lt;/span>&lt;span class="z-text z-plain">[ 0.384571] printk: legacy console [ttyS0] enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 0.408992] ACPI: Core revision 20230628
+&lt;/span>&lt;span class="z-text z-plain">[ 0.419769] clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604467 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 0.428599] APIC: Switch to symmetric I/O mode setup
+&lt;/span>&lt;span class="z-text z-plain">[ 0.437765] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+&lt;/span>&lt;span class="z-text z-plain">[ 0.458230] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x396d26ec348, max_idle_ns: 881590688210 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 0.459585] Calibrating delay loop (skipped), value calculated using timer frequency.. 3983.95 BogoMIPS (lpj=7967908)
+&lt;/span>&lt;span class="z-text z-plain">[ 0.477660] process: using AMD E400 aware idle routine
+&lt;/span>&lt;span class="z-text z-plain">[ 0.485613] Last level iTLB entries: 4KB 512, 2MB 255, 4MB 127
+&lt;/span>&lt;span class="z-text z-plain">[ 0.486334] Last level dTLB entries: 4KB 512, 2MB 255, 4MB 127, 1GB 0
+&lt;/span>&lt;span class="z-text z-plain">[ 0.488708] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+&lt;/span>&lt;span class="z-text z-plain">[ 0.489903] Spectre V2 : Mitigation: Retpolines
+&lt;/span>&lt;span class="z-text z-plain">[ 0.490200] Spectre V2 : Spectre v2 / SpectreRSB mitigation: Filling RSB on context switch
+&lt;/span>&lt;span class="z-text z-plain">[ 0.490668] Spectre V2 : Spectre v2 / SpectreRSB : Filling RSB on VMEXIT
+&lt;/span>&lt;span class="z-text z-plain">[ 0.493900] x86/fpu: Supporting XSAVE feature 0x001: &amp;#39;x87 floating point registers&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 0.503749] x86/fpu: Supporting XSAVE feature 0x002: &amp;#39;SSE registers&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 0.504258] x86/fpu: Supporting XSAVE feature 0x008: &amp;#39;MPX bounds registers&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 0.504633] x86/fpu: Supporting XSAVE feature 0x010: &amp;#39;MPX CSR&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 0.505071] x86/fpu: Supporting XSAVE feature 0x200: &amp;#39;Protection Keys User registers&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 0.505697] x86/fpu: xstate_offset[3]: 960, xstate_sizes[3]: 64
+&lt;/span>&lt;span class="z-text z-plain">[ 0.507174] x86/fpu: xstate_offset[4]: 1024, xstate_sizes[4]: 64
+&lt;/span>&lt;span class="z-text z-plain">[ 0.507499] x86/fpu: xstate_offset[9]: 2688, xstate_sizes[9]: 8
+&lt;/span>&lt;span class="z-text z-plain">[ 0.507839] x86/fpu: Enabled xstate features 0x21b, context size is 2696 bytes, using &amp;#39;standard&amp;#39; format.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.244797] Freeing SMP alternatives memory: 44K
+&lt;/span>&lt;span class="z-text z-plain">[ 1.246413] pid_max: default: 32768 minimum: 301
+&lt;/span>&lt;span class="z-text z-plain">[ 1.260335] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,integrity
+&lt;/span>&lt;span class="z-text z-plain">[ 1.262490] landlock: Up and running.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.262643] Yama: becoming mindful.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.268883] AppArmor: AppArmor initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 1.276690] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.277173] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.471034] smpboot: CPU0: AMD QEMU TCG CPU version 2.5+ (family: 0xf, model: 0x6b, stepping: 0x1)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.493337] RCU Tasks: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.496794] RCU Tasks Rude: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.498841] RCU Tasks Trace: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.501189] Performance Events: PMU not available due to virtualization, using software events only.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.505570] signal: max sigframe size: 3632
+&lt;/span>&lt;span class="z-text z-plain">[ 1.511295] rcu: Hierarchical SRCU implementation.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.511818] rcu: Max phase no-delay instances is 1000.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.531525] NMI watchdog: Perf NMI watchdog permanently disabled
+&lt;/span>&lt;span class="z-text z-plain">[ 1.533974] smp: Bringing up secondary CPUs ...
+&lt;/span>&lt;span class="z-text z-plain">[ 1.540043] smp: Brought up 1 node, 1 CPU
+&lt;/span>&lt;span class="z-text z-plain">[ 1.540581] smpboot: Max logical packages: 1
+&lt;/span>&lt;span class="z-text z-plain">[ 1.541002] smpboot: Total of 1 processors activated (3983.95 BogoMIPS)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.568521] devtmpfs: initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 1.576697] x86/mm: Memory block size: 128MB
+&lt;/span>&lt;span class="z-text z-plain">[ 1.588465] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 1.590461] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.596792] pinctrl core: initialized pinctrl subsystem
+&lt;/span>&lt;span class="z-text z-plain">[ 1.616434] PM: RTC time: 08:08:55, date: 2024-02-25
+&lt;/span>&lt;span class="z-text z-plain">[ 1.676104] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 1.688697] DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+&lt;/span>&lt;span class="z-text z-plain">[ 1.690708] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+&lt;/span>&lt;span class="z-text z-plain">[ 1.691724] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+&lt;/span>&lt;span class="z-text z-plain">[ 1.692552] audit: initializing netlink subsys (disabled)
+&lt;/span>&lt;span class="z-text z-plain">[ 1.711982] audit: type=2000 audit(1708848534.284:1): state=initialized audit_enabled=0 res=1
+&lt;/span>&lt;span class="z-text z-plain">[ 1.723892] thermal_sys: Registered thermal governor &amp;#39;fair_share&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 1.723996] thermal_sys: Registered thermal governor &amp;#39;bang_bang&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 1.724330] thermal_sys: Registered thermal governor &amp;#39;step_wise&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 1.724604] thermal_sys: Registered thermal governor &amp;#39;user_space&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 1.724882] thermal_sys: Registered thermal governor &amp;#39;power_allocator&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 1.725522] EISA bus registered
+&lt;/span>&lt;span class="z-text z-plain">[ 1.726649] cpuidle: using governor ladder
+&lt;/span>&lt;span class="z-text z-plain">[ 1.727262] cpuidle: using governor menu
+&lt;/span>&lt;span class="z-text z-plain">[ 1.730711] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+&lt;/span>&lt;span class="z-text z-plain">[ 1.736491] PCI: Using configuration type 1 for base access
+&lt;/span>&lt;span class="z-text z-plain">[ 1.751115] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+&lt;/span>&lt;span class="z-text z-plain">[ 1.954677] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+&lt;/span>&lt;span class="z-text z-plain">[ 1.955209] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+&lt;/span>&lt;span class="z-text z-plain">[ 1.955715] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+&lt;/span>&lt;span class="z-text z-plain">[ 1.956180] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+&lt;/span>&lt;span class="z-text z-plain">[ 2.021166] ACPI: Added _OSI(Module Device)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.021428] ACPI: Added _OSI(Processor Device)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.021604] ACPI: Added _OSI(3.0 _SCP Extensions)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.021772] ACPI: Added _OSI(Processor Aggregator Device)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.083310] ACPI: 1 ACPI AML tables successfully acquired and loaded
+&lt;/span>&lt;span class="z-text z-plain">[ 2.117740] ACPI: _OSC evaluation for CPUs failed, trying _PDC
+&lt;/span>&lt;span class="z-text z-plain">[ 2.122890] ACPI: Interpreter enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 2.125209] ACPI: PM: (supports S0 S3 S4 S5)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.125504] ACPI: Using IOAPIC for interrupt routing
+&lt;/span>&lt;span class="z-text z-plain">[ 2.128480] PCI: Using host bridge windows from ACPI; if necessary, use &amp;quot;pci=nocrs&amp;quot; and report a bug
+&lt;/span>&lt;span class="z-text z-plain">[ 2.128951] PCI: Using E820 reservations for host bridge windows
+&lt;/span>&lt;span class="z-text z-plain">[ 2.132501] ACPI: Enabled 2 GPEs in block 00 to 0F
+&lt;/span>&lt;span class="z-text z-plain">[ 2.199929] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+&lt;/span>&lt;span class="z-text z-plain">[ 2.201765] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments MSI EDR HPX-Type3]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.202917] acpi PNP0A03:00: _OSC: not requesting OS control; OS requires [ExtendedConfig ASPM ClockPM MSI]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.205890] acpi PNP0A03:00: fail to add MMCONFIG information, can&amp;#39;t access extended configuration space under this bridge
+&lt;/span>&lt;span class="z-text z-plain">[ 2.228341] acpiphp: Slot [2] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.229037] acpiphp: Slot [3] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.229525] acpiphp: Slot [4] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.229997] acpiphp: Slot [5] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.230569] acpiphp: Slot [6] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.231184] acpiphp: Slot [7] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.231684] acpiphp: Slot [8] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.232181] acpiphp: Slot [9] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.232653] acpiphp: Slot [10] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.233121] acpiphp: Slot [11] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.233576] acpiphp: Slot [12] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.234071] acpiphp: Slot [13] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.234859] acpiphp: Slot [14] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.235453] acpiphp: Slot [15] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.235978] acpiphp: Slot [16] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.236453] acpiphp: Slot [17] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.236931] acpiphp: Slot [18] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.237418] acpiphp: Slot [19] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.237899] acpiphp: Slot [20] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.238383] acpiphp: Slot [21] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.239303] acpiphp: Slot [22] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.239806] acpiphp: Slot [23] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.240301] acpiphp: Slot [24] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.240864] acpiphp: Slot [25] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.241343] acpiphp: Slot [26] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.241820] acpiphp: Slot [27] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.242290] acpiphp: Slot [28] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.242765] acpiphp: Slot [29] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.243433] acpiphp: Slot [30] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.243916] acpiphp: Slot [31] registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.245038] PCI host bridge to bus 0000:00
+&lt;/span>&lt;span class="z-text z-plain">[ 2.245725] pci_bus 0000:00: root bus resource [io 0x0000-0x0cf7 window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.246466] pci_bus 0000:00: root bus resource [io 0x0d00-0xffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.246838] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.247449] pci_bus 0000:00: root bus resource [mem 0x08000000-0xfebfffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.247845] pci_bus 0000:00: root bus resource [mem 0x100000000-0x17fffffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.248672] pci_bus 0000:00: root bus resource [bus 00-ff]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.254081] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000
+&lt;/span>&lt;span class="z-text z-plain">[ 2.284011] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100
+&lt;/span>&lt;span class="z-text z-plain">[ 2.286943] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180
+&lt;/span>&lt;span class="z-text z-plain">[ 2.291425] pci 0000:00:01.1: reg 0x20: [io 0xc000-0xc00f]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.293431] pci 0000:00:01.1: legacy IDE quirk: reg 0x10: [io 0x01f0-0x01f7]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.293999] pci 0000:00:01.1: legacy IDE quirk: reg 0x14: [io 0x03f6]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.294513] pci 0000:00:01.1: legacy IDE quirk: reg 0x18: [io 0x0170-0x0177]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.295175] pci 0000:00:01.1: legacy IDE quirk: reg 0x1c: [io 0x0376]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.297203] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000
+&lt;/span>&lt;span class="z-text z-plain">[ 2.298700] pci 0000:00:01.3: quirk: [io 0x0600-0x063f] claimed by PIIX4 ACPI
+&lt;/span>&lt;span class="z-text z-plain">[ 2.299231] pci 0000:00:01.3: quirk: [io 0x0700-0x070f] claimed by PIIX4 SMB
+&lt;/span>&lt;span class="z-text z-plain">[ 2.318657] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+&lt;/span>&lt;span class="z-text z-plain">[ 2.322086] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+&lt;/span>&lt;span class="z-text z-plain">[ 2.325110] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+&lt;/span>&lt;span class="z-text z-plain">[ 2.328127] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+&lt;/span>&lt;span class="z-text z-plain">[ 2.329612] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+&lt;/span>&lt;span class="z-text z-plain">[ 2.339720] iommu: Default domain type: Translated
+&lt;/span>&lt;span class="z-text z-plain">[ 2.340226] iommu: DMA domain TLB invalidation policy: lazy mode
+&lt;/span>&lt;span class="z-text z-plain">[ 2.350798] SCSI subsystem initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 2.356851] ACPI: bus type USB registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.358179] usbcore: registered new interface driver usbfs
+&lt;/span>&lt;span class="z-text z-plain">[ 2.359597] usbcore: registered new interface driver hub
+&lt;/span>&lt;span class="z-text z-plain">[ 2.360440] usbcore: registered new device driver usb
+&lt;/span>&lt;span class="z-text z-plain">[ 2.361948] pps_core: LinuxPPS API ver. 1 registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.362305] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti &amp;lt;giometti@linux.it&amp;gt;
+&lt;/span>&lt;span class="z-text z-plain">[ 2.363109] PTP clock support registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.366777] EDAC MC: Ver: 3.0.0
+&lt;/span>&lt;span class="z-text z-plain">[ 2.401484] NetLabel: Initializing
+&lt;/span>&lt;span class="z-text z-plain">[ 2.401856] NetLabel: domain hash size = 128
+&lt;/span>&lt;span class="z-text z-plain">[ 2.402226] NetLabel: protocols = UNLABELED CIPSOv4 CALIPSO
+&lt;/span>&lt;span class="z-text z-plain">[ 2.405856] NetLabel: unlabeled traffic allowed by default
+&lt;/span>&lt;span class="z-text z-plain">[ 2.417187] mctp: management component transport protocol core
+&lt;/span>&lt;span class="z-text z-plain">[ 2.417759] NET: Registered PF_MCTP protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 2.419621] PCI: Using ACPI for IRQ routing
+&lt;/span>&lt;span class="z-text z-plain">[ 2.424395] vgaarb: loaded
+&lt;/span>&lt;span class="z-text z-plain">[ 2.432278] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+&lt;/span>&lt;span class="z-text z-plain">[ 2.435526] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+&lt;/span>&lt;span class="z-text z-plain">[ 2.441451] clocksource: Switched to clocksource tsc-early
+&lt;/span>&lt;span class="z-text z-plain">[ 2.479237] VFS: Disk quotas dquot_6.6.0
+&lt;/span>&lt;span class="z-text z-plain">[ 2.479830] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.488462] AppArmor: AppArmor Filesystem Enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 2.489459] pnp: PnP ACPI init
+&lt;/span>&lt;span class="z-text z-plain">[ 2.499297] pnp: PnP ACPI: found 5 devices
+&lt;/span>&lt;span class="z-text z-plain">[ 2.554421] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 2.558514] NET: Registered PF_INET protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 2.560815] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.572527] tcp_listen_portaddr_hash hash table entries: 256 (order: 0, 4096 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.574110] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.575435] TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.576287] TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.576917] TCP: Hash tables configured (established 1024 bind 1024)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.580590] MPTCP token hash table entries: 256 (order: 0, 6144 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.581587] UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.582561] UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.585746] NET: Registered PF_UNIX/PF_LOCAL protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 2.587105] NET: Registered PF_XDP protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 2.589514] pci_bus 0000:00: resource 4 [io 0x0000-0x0cf7 window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.589800] pci_bus 0000:00: resource 5 [io 0x0d00-0xffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.590056] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.590498] pci_bus 0000:00: resource 7 [mem 0x08000000-0xfebfffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.590738] pci_bus 0000:00: resource 8 [mem 0x100000000-0x17fffffff window]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.592801] pci 0000:00:01.0: PIIX3: Enabling Passive Release
+&lt;/span>&lt;span class="z-text z-plain">[ 2.593544] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+&lt;/span>&lt;span class="z-text z-plain">[ 2.594125] PCI: CLS 0 bytes, default 64
+&lt;/span>&lt;span class="z-text z-plain">[ 2.609597] Trying to unpack rootfs image as initramfs...
+&lt;/span>&lt;span class="z-text z-plain">[ 2.622396] Initialise system trusted keyrings
+&lt;/span>&lt;span class="z-text z-plain">[ 2.625752] Key type blacklist registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.635394] workingset: timestamp_bits=36 max_order=15 bucket_order=0
+&lt;/span>&lt;span class="z-text z-plain">[ 2.636042] zbud: loaded
+&lt;/span>&lt;span class="z-text z-plain">[ 2.650474] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+&lt;/span>&lt;span class="z-text z-plain">[ 2.653656] fuse: init (API version 7.39)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.667444] integrity: Platform Keyring initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 2.668283] integrity: Machine keyring initialized
+&lt;/span>&lt;span class="z-text z-plain">[ 2.851928] Freeing initrd memory: 884K
+&lt;/span>&lt;span class="z-text z-plain">[ 2.854076] Key type asymmetric registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.854920] Asymmetric key parser &amp;#39;x509&amp;#39; registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.856300] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 243)
+&lt;/span>&lt;span class="z-text z-plain">[ 2.859177] io scheduler mq-deadline registered
+&lt;/span>&lt;span class="z-text z-plain">[ 2.867237] shpchp: Standard Hot Plug PCI Controller Driver version: 0.4
+&lt;/span>&lt;span class="z-text z-plain">[ 2.880147] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+&lt;/span>&lt;span class="z-text z-plain">[ 2.893199] ACPI: button: Power Button [PWRF]
+&lt;/span>&lt;span class="z-text z-plain">[ 2.904707] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 2.939456] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+&lt;/span>&lt;span class="z-text z-plain">[ 3.004292] Linux agpgart interface v0.103
+&lt;/span>&lt;span class="z-text z-plain">[ 3.057167] loop: module loaded
+&lt;/span>&lt;span class="z-text z-plain">[ 3.076804] scsi host0: ata_piix
+&lt;/span>&lt;span class="z-text z-plain">[ 3.080516] scsi host1: ata_piix
+&lt;/span>&lt;span class="z-text z-plain">[ 3.081608] ata1: PATA max MWDMA2 cmd 0x1f0 ctl 0x3f6 bmdma 0xc000 irq 14 lpm-pol 0
+&lt;/span>&lt;span class="z-text z-plain">[ 3.082034] ata2: PATA max MWDMA2 cmd 0x170 ctl 0x376 bmdma 0xc008 irq 15 lpm-pol 0
+&lt;/span>&lt;span class="z-text z-plain">[ 3.092255] tun: Universal TUN/TAP device driver, 1.6
+&lt;/span>&lt;span class="z-text z-plain">[ 3.093614] PPP generic driver version 2.4.2
+&lt;/span>&lt;span class="z-text z-plain">[ 3.098935] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+&lt;/span>&lt;span class="z-text z-plain">[ 3.105040] serio: i8042 KBD port at 0x60,0x64 irq 1
+&lt;/span>&lt;span class="z-text z-plain">[ 3.105702] serio: i8042 AUX port at 0x60,0x64 irq 12
+&lt;/span>&lt;span class="z-text z-plain">[ 3.108892] mousedev: PS/2 mouse device common for all mice
+&lt;/span>&lt;span class="z-text z-plain">[ 3.115249] rtc_cmos 00:04: RTC can wake from S4
+&lt;/span>&lt;span class="z-text z-plain">[ 3.118543] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+&lt;/span>&lt;span class="z-text z-plain">[ 3.123392] rtc_cmos 00:04: registered as rtc0
+&lt;/span>&lt;span class="z-text z-plain">[ 3.124604] rtc_cmos 00:04: setting system clock to 2024-02-25T08:08:56 UTC (1708848536)
+&lt;/span>&lt;span class="z-text z-plain">[ 3.127980] rtc_cmos 00:04: alarms up to one day, y3k, 242 bytes nvram, hpet irqs
+&lt;/span>&lt;span class="z-text z-plain">[ 3.128675] i2c_dev: i2c /dev entries driver
+&lt;/span>&lt;span class="z-text z-plain">[ 3.129652] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+&lt;/span>&lt;span class="z-text z-plain">[ 3.130371] device-mapper: uevent: version 1.0.3
+&lt;/span>&lt;span class="z-text z-plain">[ 3.131881] device-mapper: ioctl: 4.48.0-ioctl (2023-03-01) initialised: dm-devel@redhat.com
+&lt;/span>&lt;span class="z-text z-plain">[ 3.133379] platform eisa.0: Probing EISA bus 0
+&lt;/span>&lt;span class="z-text z-plain">[ 3.133815] platform eisa.0: EISA: Cannot allocate resource for mainboard
+&lt;/span>&lt;span class="z-text z-plain">[ 3.134409] platform eisa.0: Cannot allocate resource for EISA slot 1
+&lt;/span>&lt;span class="z-text z-plain">[ 3.134746] platform eisa.0: Cannot allocate resource for EISA slot 2
+&lt;/span>&lt;span class="z-text z-plain">[ 3.134971] platform eisa.0: Cannot allocate resource for EISA slot 3
+&lt;/span>&lt;span class="z-text z-plain">[ 3.135180] platform eisa.0: Cannot allocate resource for EISA slot 4
+&lt;/span>&lt;span class="z-text z-plain">[ 3.135379] platform eisa.0: Cannot allocate resource for EISA slot 5
+&lt;/span>&lt;span class="z-text z-plain">[ 3.135581] platform eisa.0: Cannot allocate resource for EISA slot 6
+&lt;/span>&lt;span class="z-text z-plain">[ 3.135786] platform eisa.0: Cannot allocate resource for EISA slot 7
+&lt;/span>&lt;span class="z-text z-plain">[ 3.135990] platform eisa.0: Cannot allocate resource for EISA slot 8
+&lt;/span>&lt;span class="z-text z-plain">[ 3.136224] platform eisa.0: EISA: Detected 0 cards
+&lt;/span>&lt;span class="z-text z-plain">[ 3.136667] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled
+&lt;/span>&lt;span class="z-text z-plain">[ 3.137521] ledtrig-cpu: registered to indicate activity on CPUs
+&lt;/span>&lt;span class="z-text z-plain">[ 3.139859] drop_monitor: Initializing network drop monitor service
+&lt;/span>&lt;span class="z-text z-plain">[ 3.340406] NET: Registered PF_INET6 protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 3.426373] Segment Routing with IPv6
+&lt;/span>&lt;span class="z-text z-plain">[ 3.426373] In-situ OAM (IOAM) with IPv6
+&lt;/span>&lt;span class="z-text z-plain">[ 3.426373] NET: Registered PF_PACKET protocol family
+&lt;/span>&lt;span class="z-text z-plain">[ 3.426373] Key type dns_resolver registered
+&lt;/span>&lt;span class="z-text z-plain">[ 3.445615] IPI shorthand broadcast: enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 3.500293] sched_clock: Marking stable (3448074100, 50141982)-&amp;gt;(3882769787, -384553705)
+&lt;/span>&lt;span class="z-text z-plain">[ 3.509332] registered taskstats version 1
+&lt;/span>&lt;span class="z-text z-plain">[ 3.518127] Loading compiled-in X.509 certificates
+&lt;/span>&lt;span class="z-text z-plain">[ 3.564200] Loaded X.509 cert &amp;#39;Build time autogenerated kernel key: d8cc0cbeff4c741464c5cfe695f218515c617f7b&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.572231] Loaded X.509 cert &amp;#39;Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.579573] Loaded X.509 cert &amp;#39;Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.580350] blacklist: Loading compiled-in revocation X.509 certificates
+&lt;/span>&lt;span class="z-text z-plain">[ 3.585141] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.586553] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.587621] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.588597] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.589663] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.590906] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.591908] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.592816] Loaded X.509 cert &amp;#39;Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.626555] tsc: Refined TSC clocksource calibration: 1991.985 MHz
+&lt;/span>&lt;span class="z-text z-plain">[ 3.627437] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x396d3638585, max_idle_ns: 881590743307 ns
+&lt;/span>&lt;span class="z-text z-plain">[ 3.628221] clocksource: Switched to clocksource tsc
+&lt;/span>&lt;span class="z-text z-plain">[ 3.676706] Key type .fscrypt registered
+&lt;/span>&lt;span class="z-text z-plain">[ 3.676980] Key type fscrypt-provisioning registered
+&lt;/span>&lt;span class="z-text z-plain">[ 3.697164] Key type encrypted registered
+&lt;/span>&lt;span class="z-text z-plain">[ 3.697670] AppArmor: AppArmor sha1 policy hashing enabled
+&lt;/span>&lt;span class="z-text z-plain">[ 3.699838] ima: No TPM chip found, activating TPM-bypass!
+&lt;/span>&lt;span class="z-text z-plain">[ 3.700478] Loading compiled-in module X.509 certificates
+&lt;/span>&lt;span class="z-text z-plain">[ 3.708570] Loaded X.509 cert &amp;#39;Build time autogenerated kernel key: d8cc0cbeff4c741464c5cfe695f218515c617f7b&amp;#39;
+&lt;/span>&lt;span class="z-text z-plain">[ 3.709422] ima: Allocated hash algorithm: sha256
+&lt;/span>&lt;span class="z-text z-plain">[ 3.715597] ima: No architecture policies found
+&lt;/span>&lt;span class="z-text z-plain">[ 3.717410] evm: Initialising EVM extended attributes:
+&lt;/span>&lt;span class="z-text z-plain">[ 3.717813] evm: security.selinux
+&lt;/span>&lt;span class="z-text z-plain">[ 3.718101] evm: security.SMACK64
+&lt;/span>&lt;span class="z-text z-plain">[ 3.718506] evm: security.SMACK64EXEC
+&lt;/span>&lt;span class="z-text z-plain">[ 3.718733] evm: security.SMACK64TRANSMUTE
+&lt;/span>&lt;span class="z-text z-plain">[ 3.718979] evm: security.SMACK64MMAP
+&lt;/span>&lt;span class="z-text z-plain">[ 3.719197] evm: security.apparmor
+&lt;/span>&lt;span class="z-text z-plain">[ 3.719395] evm: security.ima
+&lt;/span>&lt;span class="z-text z-plain">[ 3.719585] evm: security.capability
+&lt;/span>&lt;span class="z-text z-plain">[ 3.719856] evm: HMAC attrs: 0x1
+&lt;/span>&lt;span class="z-text z-plain">[ 3.728148] PM: Magic number: 12:764:119
+&lt;/span>&lt;span class="z-text z-plain">[ 3.732403] powernow_k8: Power state transitions not supported
+&lt;/span>&lt;span class="z-text z-plain">[ 3.917286] RAS: Correctable Errors collector initialized.
+&lt;/span>&lt;span class="z-text z-plain">[ 3.924167] clk: Disabling unused clocks
+&lt;/span>&lt;span class="z-text z-plain">[ 4.045165] Freeing unused decrypted memory: 2028K
+&lt;/span>&lt;span class="z-text z-plain">[ 4.138351] Freeing unused kernel image (initmem) memory: 4860K
+&lt;/span>&lt;span class="z-text z-plain">[ 4.139043] Write protecting the kernel read-only data: 34816k
+&lt;/span>&lt;span class="z-text z-plain">[ 4.142616] Freeing unused kernel image (rodata/data gap) memory: 920K
+&lt;/span>&lt;span class="z-text z-plain">[ 4.606372] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+&lt;/span>&lt;span class="z-text z-plain">[ 4.607434] Run /init as init process
+&lt;/span>&lt;span class="z-text z-plain">Hello world!
+&lt;/span>&lt;span class="z-text z-plain">
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/details>
+&lt;p>Happy hacking!&lt;/p></content></entry><entry xml:lang="en"><title>Parallel bash function call</title><published>2022-01-15T00:00:00+00:00</published><updated>2022-01-15T00:00:00+00:00</updated><author><name>
 Unknown</name></author><link rel="alternate" type="text/html" href="/posts/parallel_and_bash_function/"/><id>/posts/parallel_and_bash_function/</id><content type="html" xml:base="/posts/parallel_and_bash_function/">&lt;h1 id="introduction">Introduction&lt;/h1>
 &lt;p>Now that we can execute &lt;a href="/remote_bash_func_ssh">bash functions remotly&lt;/a>, we can scale the execution using &lt;a rel="noopener" target="_blank" href="https://www.gnu.org/software/parallel/">GNU Parallel&lt;/a>.&lt;/p>
 &lt;p>When one wants to make a change or retrieve one particular piece of information on a whole set of machines, multiple choice are available (ansible, puppet, pssh, consul, ...) each with their own upsides and downsides.&lt;/p>
