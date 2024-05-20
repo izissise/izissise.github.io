@@ -50,7 +50,7 @@ you only need to give the right options to qemu to set this up, without having t
 &lt;/span>&lt;span class="z-text z-plain">&amp;lt; access-control-allow-origin: *
 &lt;/span>&lt;span class="z-text z-plain">&amp;lt; via: 1.1 google
 &lt;/span>&lt;span class="z-text z-plain">&amp;lt;
-&lt;/span>&lt;span class="z-text z-plain">&amp;lt;ip6&amp;gt; # Slirp translated host ip6
+&lt;/span>&lt;span class="z-text z-plain">&amp;lt;redacted-ip6&amp;gt; # Slirp translated host ip6
 &lt;/span>&lt;/code>&lt;/pre>
 &lt;p>After bringing up the iface, we get an ip on &lt;code>::/0&lt;/code>, we use cloudflare nameserver and can use curl to get our IPv6.&lt;/p>
 &lt;p>We end up with the host IPv6 because it goes trough Slirp.&lt;/p>
