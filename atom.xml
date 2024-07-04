@@ -139,8 +139,15 @@ which takes an &lt;code>UTF-16&lt;/code> string.&lt;/p>
 &lt;li>&lt;a rel="noopener" target="_blank" href="https://github.com/tianocore/edk2/blob/master/MdePkg/Library/UefiDevicePathLib/DevicePathFromText.c">DevicePathFromText.c&lt;/a>&lt;/li>
 &lt;li>&lt;a rel="noopener" target="_blank" href="https://github.com/tianocore/edk2/blob/master/MdePkg/Library/UefiDevicePathLib/DevicePathToText.c">DevicePathToText.c&lt;/a>&lt;/li>
 &lt;/ul>
-&lt;p>Hint: Anything that is recognized as a filesystem by edk2 can be booted directly with its path (&lt;code>/EFI/BOOT/grub.efi&lt;/code>)
+&lt;div class="box-hint">
+&lt;div>
+&lt;p>Hint&lt;/p>
+&lt;/div>
+&lt;div>
+&lt;p>Anything that is recognized as a filesystem by edk2 can be booted directly with its path (&lt;code>/EFI/BOOT/grub.efi&lt;/code>)
 Firmware memory can be mapped as a filesystem with &lt;code>LoadFileOnFv2&lt;/code>.&lt;/p>
+&lt;/div>
+&lt;/div>
 &lt;p>Anyway, let's build:&lt;/p>
 &lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-storage z-modifier z-shell">export&lt;/span> &lt;span class="z-variable z-other z-readwrite z-assignment z-shell">BOOT0000&lt;/span>&lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span>&lt;span class="z-string z-unquoted z-shell">&lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(462CAA21-7614-4503-836E-8AB6F4662331)&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;/span>&lt;/span>
 &lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">build&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
@@ -217,7 +224,6 @@ you only need to give the right options to qemu to set this up, without having t
 &lt;h1 id="debug">&lt;a class="zola-anchor" href="#debug" aria-label="Anchor link for: debug">Debug&lt;/a>&lt;/h1>
 &lt;p>You can also add &lt;code>-object filter-dump,id=d0,netdev=n0,file=dump.pcap&lt;/code> to get a pcap file of the VM network.&lt;/p>
 &lt;p>That's all for today, have fun with IPv6.&lt;/p>
-&lt;h1 id="notes">&lt;a class="zola-anchor" href="#notes" aria-label="Anchor link for: notes">Notes&lt;/a>&lt;/h1>
 &lt;hr>&lt;ol class="footnotes-list">
 &lt;li id="fn-1">
 &lt;p>Despite my best efforts, I couldn't make cloud-init work. Maybe it could have its own blog post, but today we're only interested in the Qemu IPv6 Slirp stack. &lt;a href="#fr-1-1">↩&lt;/a>&lt;/p>

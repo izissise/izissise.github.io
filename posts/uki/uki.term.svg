@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="term" width="656" baseProfile="full" version="1.1" viewBox="0 0 656 443">
+  <defs>
+    <termtosvg:template_settings xmlns:termtosvg="https://github.com/nbedos/termtosvg">
+        <termtosvg:screen_geometry columns="80" rows="24"/>
+        <termtosvg:animation type="waapi"/>
+    </termtosvg:template_settings>
+    <rect id="slider_wide_track" width="70%" height="6"/>
+    <rect id="slider_track" width="70%" height="6"/>
+    <circle id="slider_button" r="4px"/>
+    <rect id="bppbutton" width="11" height="12"/>
+    <g id="icon-play">
+      <path d="M0 0l9 6-9 6z"/>
+    </g>
+    <g id="icon-pause">
+      <path d="M0 0h3v12H0zm6 0h3v12h-3zM0 0z"/>
+    </g>
+    <style type="text/css" id="generated-style"><![CDATA[
+        #screen {
+            font-family: 'DejaVu Sans Mono', monospace;
+            font-style: normal;
+            font-size: 14px;
+        }
+
+        text {
+            dominant-baseline: text-before-edge;
+            white-space: pre;
+        }
+    ]]></style>
+    <style type="text/css" id="user-style">
+      .foreground{fill:#ccc}.background{fill:#000},.color0{fill:#111}.color1 {fill: #f05}.color2 {fill: #de1;}.color3 {fill: #fe5;}.color4{fill:#08c}.color5{fill:#839}.color6{fill:#0cc}.color7{fill:#eee}.color8{fill:#000}.color9{fill:#f06}.color10{fill:#de1}.color11{fill:#fe5}.color12{fill:#49c}.color13{fill:#84a}.color14{fill:#0cd}.color15{fill:#fff}
+    </style>
+  </defs>
+  <rect id="terminalui" class="background" width="100%" height="100%"/>
+  <svg id="screen" width="656" height="428" x="10" y="20" preserveAspectRatio="xMidYMin slice" viewBox="0 0 656 428"><rect class="background" height="100%" width="100%" x="0" y="0"/><defs><g id="g1"><text x="0" textLength="16" class="foreground">$ </text><text x="16" textLength="8" class="background"> </text></g><g id="g2"><text x="0" textLength="640" class="foreground">$ qemu-system-x86_64 -m 512M -enable-kvm -nographic -bios /usr/share/ovmf/OVMF.f</text></g><g id="g3"><text x="0" textLength="352" class="foreground">d -cpu host -drive file=fat:rw:./,format=raw</text><text x="352" textLength="8" class="background"> </text></g><g id="g4"><text x="0" textLength="352" class="foreground">d -cpu host -drive file=fat:rw:./,format=raw</text></g><g id="g5"><text x="0" textLength="8" class="background"> </text></g><g id="g6"><text x="0" textLength="8" class="background"> </text><text x="8" textLength="632" class="foreground">                                                                               </text></g><g id="g7"><text x="0" textLength="352" class="foreground">                                            </text></g><g id="g8"><text x="0" textLength="640" class="foreground">BdsDxe: failed to load Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/P</text></g><g id="g9"><text x="0" textLength="384" class="foreground">ci(0x1,0x1)/Ata(Secondary,Master,0x0): Not Found</text></g><g id="g10"><text x="0" textLength="640" class="foreground">BdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x1</text></g><g id="g11"><text x="0" textLength="232" class="foreground">,0x1)/Ata(Primary,Master,0x0)</text></g><g id="g12"><text x="0" textLength="88" class="foreground">BdsDxe: sta</text><text x="88" textLength="8" class="background"> </text></g><g id="g13"><text x="0" textLength="640" class="foreground">BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x</text></g><g id="g14"><text x="0" textLength="240" class="foreground">1,0x1)/Ata(Primary,Master,0x0)</text></g><g id="g15"><text x="0" textLength="336" class="foreground">systemd-stub@0x19296000 257~devel-g8b3b01c</text></g><g id="g16"><text x="0" textLength="96" class="foreground">Hello world!</text></g><g id="g17"><text x="0" textLength="128" class="foreground">QEMU: Terminated</text></g><g id="g18"><text x="0" textLength="16" class="foreground">$ </text></g></defs><g id="screen_view"><g><rect x="16" y="0" width="8" height="17" class="foreground"/><use xlink:href="#g1" y="0"/></g><g><use xlink:href="#g2" y="442"/><rect x="352" y="459" width="8" height="17" class="foreground"/><use xlink:href="#g3" y="459"/></g><g><use xlink:href="#g2" y="884"/><use xlink:href="#g4" y="901"/><rect x="0" y="918" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="918"/></g><g><rect x="0" y="1326" width="8" height="17" class="foreground"/><use xlink:href="#g6" y="1326"/><use xlink:href="#g7" y="1343"/></g><g><use xlink:href="#g8" y="1768"/><use xlink:href="#g9" y="1785"/><rect x="0" y="1802" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="1802"/></g><g><use xlink:href="#g8" y="2210"/><use xlink:href="#g9" y="2227"/><use xlink:href="#g10" y="2244"/><use xlink:href="#g11" y="2261"/><rect x="88" y="2278" width="8" height="17" class="foreground"/><use xlink:href="#g12" y="2278"/></g><g><use xlink:href="#g8" y="2652"/><use xlink:href="#g9" y="2669"/><use xlink:href="#g10" y="2686"/><use xlink:href="#g11" y="2703"/><use xlink:href="#g13" y="2720"/><use xlink:href="#g14" y="2737"/><use xlink:href="#g15" y="2754"/><rect x="0" y="2771" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="2771"/></g><g><use xlink:href="#g8" y="3094"/><use xlink:href="#g9" y="3111"/><use xlink:href="#g10" y="3128"/><use xlink:href="#g11" y="3145"/><use xlink:href="#g13" y="3162"/><use xlink:href="#g14" y="3179"/><use xlink:href="#g15" y="3196"/><use xlink:href="#g16" y="3213"/><rect x="0" y="3230" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="3230"/></g><g><use xlink:href="#g8" y="3536"/><use xlink:href="#g9" y="3553"/><use xlink:href="#g10" y="3570"/><use xlink:href="#g11" y="3587"/><use xlink:href="#g13" y="3604"/><use xlink:href="#g14" y="3621"/><use xlink:href="#g15" y="3638"/><use xlink:href="#g16" y="3655"/><use xlink:href="#g17" y="3672"/><rect x="0" y="3689" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="3689"/></g><g><use xlink:href="#g8" y="3978"/><use xlink:href="#g9" y="3995"/><use xlink:href="#g10" y="4012"/><use xlink:href="#g11" y="4029"/><use xlink:href="#g13" y="4046"/><use xlink:href="#g14" y="4063"/><use xlink:href="#g15" y="4080"/><use xlink:href="#g16" y="4097"/><use xlink:href="#g17" y="4114"/><rect x="16" y="4131" width="8" height="17" class="foreground"/><use xlink:href="#g1" y="4131"/></g><g><use xlink:href="#g8" y="4420"/><use xlink:href="#g9" y="4437"/><use xlink:href="#g10" y="4454"/><use xlink:href="#g11" y="4471"/><use xlink:href="#g13" y="4488"/><use xlink:href="#g14" y="4505"/><use xlink:href="#g15" y="4522"/><use xlink:href="#g16" y="4539"/><use xlink:href="#g17" y="4556"/><use xlink:href="#g18" y="4573"/><rect x="0" y="4590" width="8" height="17" class="foreground"/><use xlink:href="#g5" y="4590"/></g></g></svg>
+  <text class="foreground" id="timer" style="transform:translate(47px,2px);font-family:&quot;DejaVu Sans Mono&quot;,monospace;font-style:normal;font-size:14px">0/0</text>
+  <use xlink:href="#slider_wide_track" id="wide_track" class="background" style="transform:translate(150px,7px)"/>
+  <use xlink:href="#slider_track" id="track" class="foreground" style="transform:translate(150px,7px)"/>
+  <use xlink:href="#slider_button" id="slider_1" class="color11" style="transform:translate(0px,10px)"/>
+  <use xlink:href="#bppbutton" id="ppbutton" class="background" style="transform:translate(9px,3px)"/>
+  <use xlink:href="#icon-play" id="play" class="color13" style="transform:translate(10px,3px)"/>
+  <use xlink:href="#icon-pause" id="pause" class="foreground" style="transform:translate(10px,3px)"/>
+  <script type="text/javascript" id="generated-js"><![CDATA[
+        var termtosvg_vars = {
+            transforms: [
+                {transform: 'translate3D(0, 0px, 0)', easing: 'steps(1, end)'},
+{transform: 'translate3D(0, -442px, 0)', easing: 'steps(1, end)', offset: 0.127},
+{transform: 'translate3D(0, -884px, 0)', easing: 'steps(1, end)', offset: 0.186},
+{transform: 'translate3D(0, -1326px, 0)', easing: 'steps(1, end)', offset: 0.313},
+{transform: 'translate3D(0, -1768px, 0)', easing: 'steps(1, end)', offset: 0.440},
+{transform: 'translate3D(0, -2210px, 0)', easing: 'steps(1, end)', offset: 0.567},
+{transform: 'translate3D(0, -2652px, 0)', easing: 'steps(1, end)', offset: 0.567},
+{transform: 'translate3D(0, -3094px, 0)', easing: 'steps(1, end)', offset: 0.633},
+{transform: 'translate3D(0, -3536px, 0)', easing: 'steps(1, end)', offset: 0.759},
+{transform: 'translate3D(0, -3978px, 0)', easing: 'steps(1, end)', offset: 0.771},
+{transform: 'translate3D(0, -4420px, 0)', easing: 'steps(1, end)', offset: 0.862},
+{transform: 'translate3D(0, -4420px, 0)', easing: 'steps(1, end)'}
+            ],
+            timings: {
+                duration: 7253,
+                iterations: Infinity
+            }
+        };]]></script>
+  <script type="text/javascript">
+var htmlnode = window.frameElement;
+var animation = document.getElementById('screen_view').animate(termtosvg_vars.transforms, termtosvg_vars.timings);
+var animation_duration = termtosvg_vars.timings.duration;
+var term   = document.getElementById('term');
+var track = term.getElementById('track');
+var ppbutton = term.getElementById('ppbutton');
+var play = term.getElementById('play');
+var pause = term.getElementById('pause');
+var timer = term.getElementById('timer')
+var slider_1  = term.getElementById('slider_1');
+var intervalHandle = null;
+var playing = true;
+
+var trackRect = track.getBoundingClientRect();
+var limitLower = parseInt(trackRect.x);
+var limitUpper = limitLower + parseInt(trackRect.width);
+
+function update_timer_and_button() {
+    var current_time = animation.currentTime % animation_duration;
+    var current_position = limitLower + (limitUpper - limitLower) * current_time / animation_duration;
+    slider_1.setAttribute('x', parseInt(current_position)+'px');
+    timer.textContent = parseInt(current_time / 10) + '/' + parseInt(animation_duration / 10);
+}
+
+function setpause() {
+    animation.pause();
+    play.setAttribute('display', 'inline');
+    pause.setAttribute('display', 'none');
+    playing = false;
+    clearInterval(intervalHandle);
+}
+
+function setplay() {
+    animation.play();
+    play.setAttribute('display', 'none');
+    pause.setAttribute('display', 'inline');
+    playing = true;
+    intervalHandle = setInterval(update_timer_and_button, '100ms');
+}
+
+animation.onfinish = setpause;
+
+function togglePlayPause() {
+    if (playing) {
+      setpause();
+    } else {
+      setplay();
+    }
+}
+
+ppbutton.addEventListener('click', togglePlayPause, false)
+play.addEventListener('click', togglePlayPause, false)
+pause.addEventListener('click', togglePlayPause, false)
+
+function move(evt){
+    var pt = term.createSVGPoint();
+    pt.x = evt.clientX;
+    var cursor_position = pt.matrixTransform(term.getScreenCTM().inverse());
+    if ( cursor_position.x &lt; limitLower || cursor_position.x &gt; limitUpper ) {
+        return;
+    }
+    animation.currentTime = animation_duration * (cursor_position.x - limitLower) / (limitUpper - limitLower);
+    update_timer_and_button();
+};
+
+term.getElementById('wide_track').addEventListener('click', move, false);
+term.getElementById('track').addEventListener('click', move, false);
+
+slider_1.addEventListener('mousedown',function(evt){
+    var was_playing = playing;
+    if (playing) {
+        setpause();
+    }
+
+    term.addEventListener('mousemove', move, false);
+    document.documentElement.addEventListener('mouseup', function(){
+            if (was_playing) {
+                setplay();
+            }
+            term.removeEventListener('mousemove', move, false);
+    }, false);
+}, false);
+
+if (!htmlnode.getAttribute('data-loaded')) {
+    var startplay = htmlnode.getAttribute('data-play');
+    var display_frame = htmlnode.getAttribute('data-display-frame');
+    if (startplay) {
+        setplay();
+    } else {
+        setpause();
+    }
+    if (display_frame) {
+        display_frame=parseInt(display_frame);
+        animation.currentTime = display_frame * 10;
+    }
+    update_timer_and_button();
+    htmlnode.setAttribute('data-loaded', 'true');
+}
+  </script>
+</svg>
