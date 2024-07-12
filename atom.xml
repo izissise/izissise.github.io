@@ -1,4 +1,223 @@
-<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-05-23T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Edk2 Boot 0000</title><published>2024-05-20T00:00:00+00:00</published><updated>2024-05-20T00:00:00+00:00</updated><author><name>
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-05-23T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Unified Kernel Image</title><published>2024-07-12T00:00:00+00:00</published><updated>2024-07-12T00:00:00+00:00</updated><author><name>
+Unknown</name></author><link rel="alternate" type="text/html" href="/posts/uki/"/><id>/posts/uki/</id><content type="html" xml:base="/posts/uki/">&lt;h1 id="unified-kernel-image">&lt;a class="zola-anchor" href="#unified-kernel-image" aria-label="Anchor link for: unified-kernel-image">Unified Kernel Image&lt;/a>&lt;/h1>
+&lt;p>UKIs can run on UEFI systems and simplify the distribution of small kernel images. For example, they simplify network booting with iPXE. UKIs make rootfs and kernels composable, making it possible to derive a rootfs for multiple kernel versions with one file for each pair.&lt;/p>
+&lt;p>A Unified Kernel Image (UKI) is a combination of a UEFI boot stub program, a Linux kernel image, an initramfs, and further resources in a single UEFI PE file (device tree, cpu µcode, splash screen, secure boot sig/key, ...). This file can either be directly invoked by the UEFI firmware or through a boot loader.&lt;/p>
+&lt;h1 id="the-simple-way">&lt;a class="zola-anchor" href="#the-simple-way" aria-label="Anchor link for: the-simple-way">The simple way&lt;/a>&lt;/h1>
+&lt;p>If you use a systemd-based OS and want to use UKIs, you're probably better off using &lt;a rel="noopener" target="_blank" href="https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/">systemd-boot&lt;/a>.&lt;/p>
+&lt;p>In this post, we aim to create a ready-to-boot UKI for another machine rather than the one we are creating it from.&lt;/p>
+&lt;p>We can use &lt;a rel="noopener" target="_blank" href="https://www.freedesktop.org/software/systemd/man/latest/ukify.html">ukify&lt;/a>, which is a dedicated tool to create UKIs, but I'd like to get a little more in-depth on how they are constructed.&lt;/p>
+&lt;h1 id="linux-efi">&lt;a class="zola-anchor" href="#linux-efi" aria-label="Anchor link for: linux-efi">Linux EFI&lt;/a>&lt;/h1>
+&lt;p>The Linux kernel should be compiled with &lt;code>CONFIG_EFI_STUB=y&lt;/code> see &lt;a rel="noopener" target="_blank" href="https://docs.kernel.org/admin-guide/efi-stub.html">https://docs.kernel.org/admin-guide/efi-stub.html&lt;/a>&lt;/p>
+&lt;div class="box-hint">
+&lt;div>
+&lt;p>Hint&lt;/p>
+&lt;/div>
+&lt;div>
+&lt;p>When building the kernel with EFI support, the final artifact name in the &lt;code>arch/"$ARCH"/boot/&lt;/code>
+directory changes. For &lt;code>X86_64&lt;/code>, it will be named &lt;code>bzImage&lt;/code>, but for other architectures, it will be &lt;code>vmlinuz.efi&lt;/code>.&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;p>Let's find a pre-compiled kernel in the Arch Linux repository&lt;sup class="footnote-reference" id="fr-1-1">&lt;a href="#fn-1">[1]&lt;/a>&lt;/sup>:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-storage z-modifier z-shell">export&lt;/span> &lt;span class="z-variable z-other z-readwrite z-assignment z-shell">klatest&lt;/span>&lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span>&lt;span class="z-string z-unquoted z-shell">&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">curl&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>https://archive.archlinux.org/packages/l/linux/&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">xmllint&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>recover&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>html&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>xpath&lt;/span> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>string(//a[last() - 1]/@href)&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span> -&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> We&amp;#39;re only interested in the vmlinuz file&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">curl&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>https://archive.archlinux.org/packages/l/linux/&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{&lt;/span>&lt;/span>&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-variable z-other z-readwrite z-shell">klatest&lt;/span>&lt;/span>&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}&lt;/span>&lt;/span>&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">tar&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>zstd&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>wildcards&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>no-anchored&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>transform&lt;/span>&lt;span class="z-keyword z-operator z-assignment z-option z-shell">=&lt;/span>&lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>s:.*/::&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>xf&lt;/span> - &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>vmlinuz&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;p>We can see with &lt;code>readpe&lt;/code> that the file is indeed a PE executable:
+&lt;details>
+&lt;summary>
+readpe vmlinuz
+&lt;/summary>
+&lt;div>
+&lt;pre data-lang="txt" class="language-txt z-code">&lt;code class="language-txt" data-lang="txt">&lt;span class="z-text z-plain">DOS Header
+&lt;/span>&lt;span class="z-text z-plain"> Magic number: 0x5a4d (MZ)
+&lt;/span>&lt;span class="z-text z-plain"> Bytes in last page: 0
+&lt;/span>&lt;span class="z-text z-plain"> Pages in file: 0
+&lt;/span>&lt;span class="z-text z-plain"> Relocations: 0
+&lt;/span>&lt;span class="z-text z-plain"> Size of header in paragraphs: 0
+&lt;/span>&lt;span class="z-text z-plain"> Minimum extra paragraphs: 0
+&lt;/span>&lt;span class="z-text z-plain"> Maximum extra paragraphs: 0
+&lt;/span>&lt;span class="z-text z-plain"> Initial (relative) SS value: 0
+&lt;/span>&lt;span class="z-text z-plain"> Initial SP value: 0
+&lt;/span>&lt;span class="z-text z-plain"> Initial IP value: 0
+&lt;/span>&lt;span class="z-text z-plain"> Initial (relative) CS value: 0
+&lt;/span>&lt;span class="z-text z-plain"> Address of relocation table: 0
+&lt;/span>&lt;span class="z-text z-plain"> Overlay number: 0
+&lt;/span>&lt;span class="z-text z-plain"> OEM identifier: 0
+&lt;/span>&lt;span class="z-text z-plain"> OEM information: 0
+&lt;/span>&lt;span class="z-text z-plain"> PE header offset: 0x40
+&lt;/span>&lt;span class="z-text z-plain">COFF/File header
+&lt;/span>&lt;span class="z-text z-plain"> Machine: 0x8664 IMAGE_FILE_MACHINE_AMD64
+&lt;/span>&lt;span class="z-text z-plain"> Number of sections: 4
+&lt;/span>&lt;span class="z-text z-plain"> Date/time stamp: 0 (Thu, 01 Jan 1970 00:00:00 UTC)
+&lt;/span>&lt;span class="z-text z-plain"> Symbol Table offset: 0
+&lt;/span>&lt;span class="z-text z-plain"> Number of symbols: 1
+&lt;/span>&lt;span class="z-text z-plain"> Size of optional header: 0xa0
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics: 0x206
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_FILE_EXECUTABLE_IMAGE
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_FILE_LINE_NUMS_STRIPPED
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_FILE_DEBUG_STRIPPED
+&lt;/span>&lt;span class="z-text z-plain">Optional/Image header
+&lt;/span>&lt;span class="z-text z-plain"> Magic number: 0x20b (PE32+)
+&lt;/span>&lt;span class="z-text z-plain"> Linker major version: 2
+&lt;/span>&lt;span class="z-text z-plain"> Linker minor version: 20
+&lt;/span>&lt;span class="z-text z-plain"> Size of .text section: 0xc99000
+&lt;/span>&lt;span class="z-text z-plain"> Size of .data section: 0x5f000
+&lt;/span>&lt;span class="z-text z-plain"> Size of .bss section: 0
+&lt;/span>&lt;span class="z-text z-plain"> Entrypoint: 0xc93579
+&lt;/span>&lt;span class="z-text z-plain"> Address of .text section: 0x5000
+&lt;/span>&lt;span class="z-text z-plain"> ImageBase: 0
+&lt;/span>&lt;span class="z-text z-plain"> Alignment of sections: 0x1000
+&lt;/span>&lt;span class="z-text z-plain"> Alignment factor: 0x200
+&lt;/span>&lt;span class="z-text z-plain"> Major version of required OS: 0
+&lt;/span>&lt;span class="z-text z-plain"> Minor version of required OS: 0
+&lt;/span>&lt;span class="z-text z-plain"> Major version of image: 3
+&lt;/span>&lt;span class="z-text z-plain"> Minor version of image: 0
+&lt;/span>&lt;span class="z-text z-plain"> Major version of subsystem: 0
+&lt;/span>&lt;span class="z-text z-plain"> Minor version of subsystem: 0
+&lt;/span>&lt;span class="z-text z-plain"> Size of image: 0xcfd000
+&lt;/span>&lt;span class="z-text z-plain"> Size of headers: 0x1000
+&lt;/span>&lt;span class="z-text z-plain"> Checksum: 0
+&lt;/span>&lt;span class="z-text z-plain"> Subsystem required: 0xa (IMAGE_SUBSYSTEM_EFI_APPLICATION)
+&lt;/span>&lt;span class="z-text z-plain"> DLL characteristics: 0x100
+&lt;/span>&lt;span class="z-text z-plain"> DLL characteristics names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_DLLCHARACTERISTICS_NX_COMPAT
+&lt;/span>&lt;span class="z-text z-plain"> Size of stack to reserve: 0
+&lt;/span>&lt;span class="z-text z-plain"> Size of stack to commit: 0
+&lt;/span>&lt;span class="z-text z-plain"> Size of heap space to reserve: 0
+&lt;/span>&lt;span class="z-text z-plain"> Size of heap space to commit: 0
+&lt;/span>&lt;span class="z-text z-plain">Data directories
+&lt;/span>&lt;span class="z-text z-plain">Imported functions
+&lt;/span>&lt;span class="z-text z-plain">Exported functions
+&lt;/span>&lt;span class="z-text z-plain">Sections
+&lt;/span>&lt;span class="z-text z-plain"> Section
+&lt;/span>&lt;span class="z-text z-plain"> Name: .setup
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Size: 0x3000 (12288 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Address: 0x1000
+&lt;/span>&lt;span class="z-text z-plain"> Size Of Raw Data: 0x3000 (12288 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Pointer To Raw Data: 0x1000
+&lt;/span>&lt;span class="z-text z-plain"> Number Of Relocations: 0
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics: 0x42000040
+&lt;/span>&lt;span class="z-text z-plain"> Characteristic Names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_CNT_INITIALIZED_DATA
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_DISCARDABLE
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_READ
+&lt;/span>&lt;span class="z-text z-plain"> Section
+&lt;/span>&lt;span class="z-text z-plain"> Name: .compat
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Size: 0x1000 (4096 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Address: 0x4000
+&lt;/span>&lt;span class="z-text z-plain"> Size Of Raw Data: 0x1000 (4096 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Pointer To Raw Data: 0x4000
+&lt;/span>&lt;span class="z-text z-plain"> Number Of Relocations: 0
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics: 0x42000040
+&lt;/span>&lt;span class="z-text z-plain"> Characteristic Names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_CNT_INITIALIZED_DATA
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_DISCARDABLE
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_READ
+&lt;/span>&lt;span class="z-text z-plain"> Section
+&lt;/span>&lt;span class="z-text z-plain"> Name: .text
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Size: 0xc99000 (13209600 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Address: 0x5000
+&lt;/span>&lt;span class="z-text z-plain"> Size Of Raw Data: 0xc99000 (13209600 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Pointer To Raw Data: 0x5000
+&lt;/span>&lt;span class="z-text z-plain"> Number Of Relocations: 0
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics: 0x60000020
+&lt;/span>&lt;span class="z-text z-plain"> Characteristic Names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_CNT_CODE
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_EXECUTE
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_READ
+&lt;/span>&lt;span class="z-text z-plain"> Section
+&lt;/span>&lt;span class="z-text z-plain"> Name: .data
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Size: 0x5f000 (389120 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Virtual Address: 0xc9e000
+&lt;/span>&lt;span class="z-text z-plain"> Size Of Raw Data: 0x1200 (4608 bytes)
+&lt;/span>&lt;span class="z-text z-plain"> Pointer To Raw Data: 0xc9e000
+&lt;/span>&lt;span class="z-text z-plain"> Number Of Relocations: 0
+&lt;/span>&lt;span class="z-text z-plain"> Characteristics: 0xc0000040
+&lt;/span>&lt;span class="z-text z-plain"> Characteristic Names
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_CNT_INITIALIZED_DATA
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_READ
+&lt;/span>&lt;span class="z-text z-plain"> IMAGE_SCN_MEM_WRITE
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/details>
+&lt;/p>
+&lt;p>With this, we can already boot Linux directly from the UEFI:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">qemu-system-x86_64&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>m&lt;/span> 512M&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>enable-kvm&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>nographic&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>cpu&lt;/span> host&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>bios&lt;/span> /usr/share/ovmf/OVMF.fd&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>drive&lt;/span> file=fat:rw:./,format=raw&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> Press ESC to enter uefi shell&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">fs0:vmlinuz&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> console=ttyS0 loglevel=6&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;iframe loading="lazy" width="656" height="443" class="center" frameborder="0" type="text&amp;#x2F;svg+xml" src="efi_kernel.term.svg" data-display-frame="1715" >&lt;/iframe>
+&lt;p>The kernel crashed because there is no root FS, but it successfully booted as an EFI app.&lt;/p>
+&lt;h1 id="sd-boot">&lt;a class="zola-anchor" href="#sd-boot" aria-label="Anchor link for: sd-boot">SD Boot&lt;/a>&lt;/h1>
+&lt;p>UEFI doesn't support UKIs directly, so we need glue code to copy UKI sections to memory and pass control to Linux.&lt;/p>
+&lt;p>We need to compile systemd efi stub as the bootloader to put in the UKI so it copies Linux and initrd to the right place in memory, displays the splash screen, measures secure boot values, and finally gives control to Linux with the cmdline and dtb.&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">git&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> clone https://github.com/systemd/systemd.git&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-cd z-shell">cd&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> systemd&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">meson&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> setup build&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-cd z-shell">cd&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> build&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">ninja&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> src/boot/efi/linuxx64.efi.stub&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">cp&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> src/boot/efi/linuxx64.efi.stub ../../uki_base.efi&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;h1 id="populating-uki">&lt;a class="zola-anchor" href="#populating-uki" aria-label="Anchor link for: populating-uki">Populating UKI&lt;/a>&lt;/h1>
+&lt;p>UKIs have a &lt;code>PE&lt;/code> file layout with standardized sections&lt;sup class="footnote-reference" id="fr-2-1">&lt;a href="#fn-2">[2]&lt;/a>&lt;/sup>. We will use the following:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>.linux&lt;/code> where we put the kernel; we can just copy &lt;code>vmlinuz&lt;/code>&lt;/li>
+&lt;li>&lt;code>.osrel&lt;/code> a key-value file with metadata about the booted image&lt;/li>
+&lt;li>&lt;code>.initrd&lt;/code> the initramfs that will be loaded with the kernel&lt;/li>
+&lt;/ul>
+&lt;p>Previously we &lt;a href="/posts/initramfs">built a minimal rootfs&lt;/a> that we are going to use in our UKI&lt;/p>
+&lt;p>Creating a UKI involves mainly &lt;code>objcopy&lt;/code> with the right parameters to pack all data into one &lt;code>PE&lt;/code> file.&lt;/p>
+&lt;p>We create two files that will be the UKI metadata and kernel command line:&lt;/p>
+&lt;pre data-lang="txt" class="language-txt z-code">&lt;code class="language-txt" data-lang="txt">&lt;span class="z-text z-plain"># cmdline.txt
+&lt;/span>&lt;span class="z-text z-plain">console=ttyS0 loglevel=6
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;pre data-lang="txt" class="language-txt z-code">&lt;code class="language-txt" data-lang="txt">&lt;span class="z-text z-plain"># osrel.txt
+&lt;/span>&lt;span class="z-text z-plain">NAME=UKI
+&lt;/span>&lt;span class="z-text z-plain">PRETTY_NAME=UKI
+&lt;/span>&lt;span class="z-text z-plain">VERSION_CODENAME=1
+&lt;/span>&lt;span class="z-text z-plain">ID=1
+&lt;/span>&lt;span class="z-text z-plain">BUILD_ID=1
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;p>We have &lt;code>uki_base.efi&lt;/code> our shell UKI image; we now just have to fill the aforementioned sections.&lt;/p>
+&lt;p>The composition can be done in any order using multiple calls to &lt;code>objcopy&lt;/code>.&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> sd_boot_stub randomize the virtual memory address (vma) so we first need to get the `IMAGE_BASE` to put the section after the base.&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> we give enough room between sections vma so they don&amp;#39;t overlap for big files&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-storage z-modifier z-shell">export&lt;/span> &lt;span class="z-variable z-other z-readwrite z-assignment z-shell">IMAGE_BASE&lt;/span>&lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span>&lt;span class="z-string z-unquoted z-shell">&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">objdump&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>x&lt;/span> &lt;span class="z-string z-quoted z-double z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;quot;&lt;/span>uki_base.efi&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;quot;&lt;/span>&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">grep&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> ImageBase&lt;/span> &lt;span class="z-keyword z-operator z-logical z-pipe z-shell">|&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">awk&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-string z-quoted z-single z-shell">&lt;span class="z-punctuation z-definition z-string z-begin z-shell">&amp;#39;&lt;/span>{print $2}&lt;span class="z-punctuation z-definition z-string z-end z-shell">&amp;#39;&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span>&lt;/span>&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-comment z-line z-number-sign z-shell">&lt;span class="z-punctuation z-definition z-comment z-begin z-shell">#&lt;/span>&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell"> copy files into UKI section&lt;/span>&lt;span class="z-comment z-line z-number-sign z-shell">
+&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">objcopy&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>add-section&lt;/span> .osrel=osrel.txt &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>add-section&lt;/span> .cmdline=cmdline.txt &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>add-section&lt;/span> .initrd=initramfs.cpio &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>add-section&lt;/span> .linux=vmlinuz &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>change-section-vma&lt;/span> .osrel=&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span> &lt;span class="z-meta z-group z-arithmetic z-shell">&lt;span class="z-punctuation z-section z-arithmetic z-begin z-shell">((&lt;/span> off &lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span> &lt;span class="z-constant z-numeric z-integer z-other z-shell">&lt;span class="z-punctuation z-definition z-numeric z-base z-shell">16#&lt;/span>00020000&lt;/span> &lt;span class="z-keyword z-operator z-arithmetic z-shell">+&lt;/span> &lt;span class="z-constant z-numeric z-integer z-decimal z-shell">16&lt;/span>#&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">IMAGE_BASE&lt;/span>&lt;/span> &lt;span class="z-punctuation z-section z-arithmetic z-end z-shell">))&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-printf z-shell">printf&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0x&lt;span class="z-meta z-group z-expansion z-job z-shell">&lt;span class="z-punctuation z-definition z-variable z-job z-shell">%&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">x&lt;/span>&lt;/span> &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">off&lt;/span>&lt;/span> &lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>change-section-vma&lt;/span> .cmdline=&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span> &lt;span class="z-meta z-group z-arithmetic z-shell">&lt;span class="z-punctuation z-section z-arithmetic z-begin z-shell">((&lt;/span> off &lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span> &lt;span class="z-constant z-numeric z-integer z-other z-shell">&lt;span class="z-punctuation z-definition z-numeric z-base z-shell">16#&lt;/span>00020200&lt;/span> &lt;span class="z-keyword z-operator z-arithmetic z-shell">+&lt;/span> &lt;span class="z-constant z-numeric z-integer z-decimal z-shell">16&lt;/span>#&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">IMAGE_BASE&lt;/span>&lt;/span> &lt;span class="z-punctuation z-section z-arithmetic z-end z-shell">))&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-printf z-shell">printf&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0x&lt;span class="z-meta z-group z-expansion z-job z-shell">&lt;span class="z-punctuation z-definition z-variable z-job z-shell">%&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">x&lt;/span>&lt;/span> &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">off&lt;/span>&lt;/span> &lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>change-section-vma&lt;/span> .initrd=&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span> &lt;span class="z-meta z-group z-arithmetic z-shell">&lt;span class="z-punctuation z-section z-arithmetic z-begin z-shell">((&lt;/span> off &lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span> &lt;span class="z-constant z-numeric z-integer z-other z-shell">&lt;span class="z-punctuation z-definition z-numeric z-base z-shell">16#&lt;/span>00100000&lt;/span> &lt;span class="z-keyword z-operator z-arithmetic z-shell">+&lt;/span> &lt;span class="z-constant z-numeric z-integer z-decimal z-shell">16&lt;/span>#&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">IMAGE_BASE&lt;/span>&lt;/span> &lt;span class="z-punctuation z-section z-arithmetic z-end z-shell">))&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-printf z-shell">printf&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0x&lt;span class="z-meta z-group z-expansion z-job z-shell">&lt;span class="z-punctuation z-definition z-variable z-job z-shell">%&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">x&lt;/span>&lt;/span> &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">off&lt;/span>&lt;/span> &lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>change-section-vma&lt;/span> .linux=&lt;span class="z-meta z-group z-expansion z-command z-parens z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-punctuation z-section z-parens z-begin z-shell">(&lt;/span> &lt;span class="z-meta z-group z-arithmetic z-shell">&lt;span class="z-punctuation z-section z-arithmetic z-begin z-shell">((&lt;/span> off &lt;span class="z-keyword z-operator z-assignment z-shell">=&lt;/span> &lt;span class="z-constant z-numeric z-integer z-other z-shell">&lt;span class="z-punctuation z-definition z-numeric z-base z-shell">16#&lt;/span>02000000&lt;/span> &lt;span class="z-keyword z-operator z-arithmetic z-shell">+&lt;/span> &lt;span class="z-constant z-numeric z-integer z-decimal z-shell">16&lt;/span>#&lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">IMAGE_BASE&lt;/span>&lt;/span> &lt;span class="z-punctuation z-section z-arithmetic z-end z-shell">))&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-shell">&lt;/span>&lt;span class="z-keyword z-operator z-logical z-continue z-shell">;&lt;/span> &lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-printf z-shell">printf&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> 0x&lt;span class="z-meta z-group z-expansion z-job z-shell">&lt;span class="z-punctuation z-definition z-variable z-job z-shell">%&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">x&lt;/span>&lt;/span> &lt;span class="z-meta z-group z-expansion z-parameter z-shell">&lt;span class="z-punctuation z-definition z-variable z-shell">$&lt;/span>&lt;span class="z-variable z-other z-readwrite z-shell">off&lt;/span>&lt;/span> &lt;/span>&lt;span class="z-punctuation z-section z-parens z-end z-shell">)&lt;/span>&lt;/span> &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> --&lt;/span>set-section-flags&lt;/span> .linux=code,readonly &lt;span class="z-punctuation z-separator z-continuation z-line z-shell">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-arguments z-shell"> uki_base.efi bootx64.efi&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;h1 id="test-with-qemu">&lt;a class="zola-anchor" href="#test-with-qemu" aria-label="Anchor link for: test-with-qemu">Test with Qemu&lt;/a>&lt;/h1>
+&lt;p>Create a directory and file &lt;code>efi/boot/bootx64.efi&lt;/code>&lt;sup class="footnote-reference" id="fr-3-1">&lt;a href="#fn-3">[3]&lt;/a>&lt;/sup>, then run Qemu:&lt;/p>
+&lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">mkdir&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>p&lt;/span> efi/boot&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">cp&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> bootx64.efi efi/boot/&lt;/span>
+&lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">qemu-system-x86_64&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell">&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>m&lt;/span> 512M&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>enable-kvm&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>nographic&lt;/span>&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>bios&lt;/span> /usr/share/ovmf/OVMF.fd&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>cpu&lt;/span> host&lt;span class="z-variable z-parameter z-option z-shell">&lt;span class="z-punctuation z-definition z-parameter z-shell"> -&lt;/span>drive&lt;/span> file=fat:rw:./,format=raw&lt;/span>
+&lt;/span>&lt;/code>&lt;/pre>
+&lt;iframe loading="lazy" width="656" height="443" class="center" frameborder="0" type="text&amp;#x2F;svg+xml" src="uki.term.svg" data-display-frame="600" >&lt;/iframe>
+&lt;h1 id="conclusion">&lt;a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">Conclusion&lt;/a>&lt;/h1>
+&lt;p>We created a single UKI file that contains a kernel, initramfs, cmdline, and metadata. It is easy to distribute and boot with any UEFI-compatible BIOS of the same architecture. We can imagine giving the UKI to U-Boot or iPXE to boot it in even more environments.&lt;/p>
+&lt;p>Next time, we will see how to sign the UKI so it works with secure boot.&lt;/p>
+&lt;hr>&lt;ol class="footnotes-list">
+&lt;li id="fn-1">
+&lt;p>Found this usage of curl + xmllint &lt;a rel="noopener" target="_blank" href="https://www.joshmcarthur.com/til/2018/06/19/extracting-xml-data-with-curl-and-xmllint.html">here&lt;/a> &lt;a href="#fr-1-1">↩&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn-2">
+&lt;p>More sections can be found in &lt;a rel="noopener" target="_blank" href="https://www.freedesktop.org/software/systemd/man/latest/ukify.html#%5BUKI%5D%20section">ukify manpage&lt;/a>. &lt;a href="#fr-2-1">↩&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn-3">
+&lt;p>A FAT partition with a file &lt;code>efi/boot/bootx64.efi&lt;/code> will be booted automatically by most UEFI implementations. The file suffix depends on the target CPU architecture. &lt;a href="#fr-3-1">↩&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol></content></entry><entry xml:lang="en"><title>Edk2 Boot 0000</title><published>2024-05-20T00:00:00+00:00</published><updated>2024-05-20T00:00:00+00:00</updated><author><name>
 Unknown</name></author><link rel="alternate" type="text/html" href="/posts/edk2boot0000/"/><id>/posts/edk2boot0000/</id><content type="html" xml:base="/posts/edk2boot0000/">&lt;h1 id="edk2">&lt;a class="zola-anchor" href="#edk2" aria-label="Anchor link for: edk2">Edk2&lt;/a>&lt;/h1>
 &lt;p>&lt;a rel="noopener" target="_blank" href="https://github.com/tianocore/edk2">Edk2&lt;/a> is the official UEFI implementation.
 One problem I encountered is that it doesn't provide a way to specify the default boot entry.&lt;/p>
