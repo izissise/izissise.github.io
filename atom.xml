@@ -150,8 +150,9 @@ readpe vmlinuz
 &lt;iframe loading="lazy" width="656" height="443" class="center" frameborder="0" type="text&amp;#x2F;svg+xml" src="efi_kernel.term.svg" data-display-frame="1715" >&lt;/iframe>
 &lt;p>The kernel crashed because there is no root FS, but it successfully booted as an EFI app.&lt;/p>
 &lt;h1 id="sd-boot">&lt;a class="zola-anchor" href="#sd-boot" aria-label="Anchor link for: sd-boot">SD Boot&lt;/a>&lt;/h1>
-&lt;p>UEFI doesn't support UKIs directly, so we need glue code to copy UKI sections to memory and pass control to Linux.&lt;/p>
-&lt;p>We need to compile systemd efi stub as the bootloader to put in the UKI so it copies Linux and initrd to the right place in memory, displays the splash screen, measures secure boot values, and finally gives control to Linux with the cmdline and dtb.&lt;/p>
+&lt;p>Linux doesn't support UKIs directly, so we need glue code to copy UKI sections to memory and pass control to Linux.
+In the future UKI might directly be supported by the kernel, see &lt;a rel="noopener" target="_blank" href="https://github.com/rhboot/nmbl-poc">nmbl&lt;/a>.&lt;/p>
+&lt;p>For now, we need to compile systemd efi stub as the bootloader to put in the UKI so it copies Linux and initrd to the right place in memory, displays the splash screen, measures secure boot values, and finally gives control to Linux with the cmdline and dtb.&lt;/p>
 &lt;pre data-lang="bash" class="language-bash z-code">&lt;code class="language-bash" data-lang="bash">&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">git&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> clone https://github.com/systemd/systemd.git&lt;/span>
 &lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-support z-function z-cd z-shell">cd&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> systemd&lt;/span>
 &lt;/span>&lt;span class="z-source z-shell z-bash">&lt;span class="z-meta z-function-call z-shell">&lt;span class="z-variable z-function z-shell">meson&lt;/span>&lt;/span>&lt;span class="z-meta z-function-call z-arguments z-shell"> setup build&lt;/span>
