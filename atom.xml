@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>2024-08-04T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Git Config</title><published>2024-08-04T00:00:00+00:00</published><updated>2024-08-04T00:00:00+00:00</updated><author><name>
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3024-10-08T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Git Config</title><published>2024-08-04T00:00:00+00:00</published><updated>2024-08-04T00:00:00+00:00</updated><author><name>
 Unknown</name></author><link rel="alternate" type="text/html" href="/posts/gitconfig/"/><id>/posts/gitconfig/</id><content type="html" xml:base="/posts/gitconfig/">&lt;p>Git can change configuration depending on the directory you're in.
 By using this feature, you can create a directory structure with context-aware Git configurations.&lt;/p>
 &lt;p>Using &lt;code>includeIf&lt;/code> in &lt;code>~/.gitconfig&lt;/code>:&lt;/p>
-&lt;pre data-lang="ini" data-path="/.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-path="/.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[include]
+&lt;pre data-lang="ini" data-name="/.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-name="/.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[include]
 &lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">path&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-double z-genconfig">&amp;quot;~/.config/git/main.gitconfig&amp;quot;&lt;/span>
 &lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[includeIf &amp;quot;gitdir:~/work/companyA/**&amp;quot;]
 &lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">path&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-double z-genconfig">&amp;quot;~/.config/git/companyA.gitconfig&amp;quot;&lt;/span>
@@ -14,7 +14,7 @@ will get the git configuration from &lt;code>~/.config/git/companyA.gitconfig&lt
 and similarly for &lt;code>companyB&lt;/code>.&lt;/p>
 &lt;h1 id="identity">&lt;a class="zola-anchor" href="#identity" aria-label="Anchor link for: identity">Identity&lt;/a>&lt;/h1>
 &lt;p>Now we can set our special configuration in its own file for &lt;code>companyA&lt;/code>:&lt;/p>
-&lt;pre data-lang="ini" data-path="~/.config/git/companyA.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-path="~/.config/git/companyA.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[user]
+&lt;pre data-lang="ini" data-name="~/.config/git/companyA.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-name="~/.config/git/companyA.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[user]
 &lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">name&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> Hugues
 &lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">email&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> h&lt;span class="z-storage z-source z-genconfig">@companyA&lt;/span>&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>com
 &lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">signingkey&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">~&lt;/span>&lt;span class="z-keyword z-operator z-genconfig">/&lt;/span>&lt;span class="z-keyword z-operator z-genconfig">.&lt;/span>ssh&lt;span class="z-keyword z-operator z-genconfig">/&lt;/span>keys&lt;span class="z-keyword z-operator z-genconfig">/&lt;/span>compA
@@ -39,7 +39,7 @@ We also get commits signed with the SSH key that we use to access the repository
 Finally, we make an alias for the company URL, making it simpler to clone new repos or to modify the URL everywhere if the repository ever changes URL.&lt;/p>
 &lt;h1 id="global-preferences">&lt;a class="zola-anchor" href="#global-preferences" aria-label="Anchor link for: global-preferences">Global preferences&lt;/a>&lt;/h1>
 &lt;p>We usually want to retain certain configurations and aliases no matter the directory.&lt;/p>
-&lt;pre data-lang="ini" data-path="~/.config/git/main.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-path="~/.config/git/main.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[core]
+&lt;pre data-lang="ini" data-name="~/.config/git/main.gitconfig" class="language-ini z-code">&lt;code class="language-ini" data-lang="ini" data-name="~/.config/git/main.gitconfig">&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[core]
 &lt;/span>&lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-meta z-param z-genconfig"> &lt;span class="z-variable z-parameter z-genconfig">excludesfile&lt;/span> &lt;span class="z-keyword z-operator z-genconfig">=&lt;/span>&lt;/span> &lt;span class="z-string z-quoted z-double z-genconfig">&amp;quot;~/.config/git/main.gitignore&amp;quot;&lt;/span>
 &lt;/span>&lt;span class="z-source z-genconfig">
 &lt;/span>&lt;span class="z-source z-genconfig">&lt;span class="z-storage z-type z-genconfig">[commit]
@@ -90,7 +90,7 @@ which allows having a local scratchpad in every git project that won't end up in
 It is a good place to remind you what you should write
 and it can be overridden for a specific company if they have a different policy.&lt;/p>
 &lt;p>Here we use good practices from the internet:&lt;/p>
-&lt;pre data-lang="txt" data-path="~/.config/git/main.commit.template" class="language-txt z-code">&lt;code class="language-txt" data-lang="txt" data-path="~/.config/git/main.commit.template">&lt;span class="z-text z-plain">
+&lt;pre data-lang="txt" data-name="~/.config/git/main.commit.template" class="language-txt z-code">&lt;code class="language-txt" data-lang="txt" data-name="~/.config/git/main.commit.template">&lt;span class="z-text z-plain">
 &lt;/span>&lt;span class="z-text z-plain"># Title No more than 50 chars. ##### stop here: #
 &lt;/span>&lt;span class="z-text z-plain"># Title: Summary, imperative, start upper case, don&amp;#39;t end with a period
 &lt;/span>&lt;span class="z-text z-plain"># Remember blank line between title and body.
