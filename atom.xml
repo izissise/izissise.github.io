@@ -9,7 +9,7 @@ in a terminal.&lt;/p>
 &lt;p>Much of this is not really necessary.&lt;/p>
 &lt;p>First, on modern systems, &lt;a rel="noopener" target="_blank" href="https://wiki.debian.org/UsrMerge">&lt;code>/{bin,sbin}/&lt;/code> directories are symlinks to &lt;code>/usr/{bin,sbin}/&lt;/code>&lt;/a>.&lt;/p>
 &lt;p>&lt;code>/usr/local&lt;/code> has no use to me, if I compile/install software I'd rather they be put in the default locations&lt;sup class="footnote-reference" id="fr-1-1">&lt;a href="#fn-1">[1]&lt;/a>&lt;/sup>.&lt;/p>
-&lt;p>Because sometimes I forgot to do &lt;code>./configure --prefix=/usr&lt;/code> before compiling, I have setup &lt;code>/usr/local&lt;/code> to symlink to &lt;code>/usr&lt;/code> (&lt;code>cd /usr &amp;amp;&amp;amp; ln -s /usr local&lt;/code>).&lt;/p>
+&lt;p>Because sometimes I forgot to do &lt;code>./configure --prefix=/usr&lt;/code> before compiling, I have setup &lt;code>/usr/local&lt;/code> to symlink to &lt;code>/usr&lt;/code> (&lt;code>cd /usr &amp;amp;&amp;amp; ln -s /usr local&lt;/code>). For software that are not found in public repositories and that should run as a daemon I use &lt;code>/opt&lt;/code>.&lt;/p>
 &lt;p>This leaves a much shorter &lt;code>PATH&lt;/code>:&lt;/p>
 &lt;pre data-name="/etc/environment" class="z-code">&lt;code data-name="/etc/environment">&lt;span class="z-text z-plain">PATH=/usr/sbin:/usr/bin:/usr/games
 &lt;/span>&lt;/code>&lt;/pre>
