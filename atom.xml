@@ -1,4 +1,155 @@
-<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3025-10-19T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Nginx Explorer - Upload</title><published>2025-03-01T00:00:00+00:00</published><updated>2025-03-01T00:00:00+00:00</updated><author><name>
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/atom-style.xsl" type="text/xsl"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Hugues Blog</title><link rel="self" type="application/atom+xml" href="/atom.xml"/><link rel="alternate" type="text/html" href="/"/><updated>3025-06-09T00:00:00+00:00</updated><id>/atom.xml</id><entry xml:lang="en"><title>Raconn - Ssh multi hostname</title><published>2025-10-24T00:00:00+00:00</published><updated>2025-10-24T00:00:00+00:00</updated><author><name>
+Unknown</name></author><link rel="alternate" type="text/html" href="/posts/raconn/"/><id>/posts/raconn/</id><content type="html" xml:base="/posts/raconn/">&lt;p&gt;TLDR: &lt;a href="/posts/raconn/#raconn"&gt;Raconn&lt;/a&gt;&lt;/p&gt;
+&lt;h1 id="introduction"&gt;&lt;a class="zola-anchor" href="#introduction" aria-label="Anchor link for: introduction"&gt;Introduction&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;Recently I wanted to connect to a local machine with ssh but didn't know it's IP, I knew the MAC address which I could translate into the IPv6 link-local address but since the &lt;code&gt;connect&lt;/code&gt; syscall requires the local iface name for ip6 link local, it would need to be hardcoded in the ssh config, making it inconvenient to change. Also if the same machine is accessible from a wider network, I'd need a second entry in the config and have to remember which one to use depending on which network my computer is connected to.&lt;/p&gt;
+&lt;p&gt;That’s a lot of complexity and I thought most of it could be solved if ssh config allowed multiple hostnames for a single host entry.&lt;/p&gt;
+&lt;p&gt;Unfortunately, &lt;code&gt;OpenSSH&lt;/code&gt;'s &lt;code&gt;Hostname&lt;/code&gt; directive doesn't support multiple entries:&lt;/p&gt;
+&lt;pre class="z-code"&gt;&lt;code&gt;&lt;span class="z-text z-plain"&gt;Host machineA
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Hostname machinea.local 192.168.1.65 2a00:1450:4007:81a::200e 142.250.201.174 00:00:07:00:00:00 ...
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Port 22
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; User admin
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; PubkeyAuthentication yes
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; IdentityFile ~/.ssh/id_rsa
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;But there’s a silver lining &lt;code&gt;ProxyCommand&lt;/code&gt;. It runs a program that’s expected to connect to the remote machine, &lt;code&gt;OpenSSH&lt;/code&gt; will simply speaks its protocol through the program's &lt;code&gt;stdin&lt;/code&gt; and &lt;code&gt;stdout&lt;/code&gt;!&lt;/p&gt;
+&lt;p&gt;Which means I can do the following:&lt;/p&gt;
+&lt;pre data-name="~/.ssh/config" class="z-code"&gt;&lt;code data-name="~/.ssh/config"&gt;&lt;span class="z-text z-plain"&gt;Host machineA
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; ProxyCommand program %p machine.company.net 192.168.1.65 2a00:1450:4007:81a::200e 142.250.201.174 00:00:07:00:00:00 ...
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Port 22
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; User admin
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; PubkeyAuthentication yes
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; IdentityFile ~/.ssh/id_rsa
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I just need to figure out what &lt;code&gt;program&lt;/code&gt; is.&lt;/p&gt;
+&lt;h1 id="socat"&gt;&lt;a class="zola-anchor" href="#socat" aria-label="Anchor link for: socat"&gt;Socat&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;It seems like a shell script using &lt;code&gt;socat&lt;/code&gt; would be perfect for the job, I was able to get a serialized version working, but since it tried every hostname one after another, it could take a long time to connect, especially if only the last one on the command line was reachable.&lt;/p&gt;
+&lt;p&gt;The main issue I had was that socat executes the script defined on the &lt;code&gt;exec&lt;/code&gt; statement before the connection is successfully established making it hard to know which socat instance is connected when spawning multiple ones in parallel.&lt;/p&gt;
+&lt;p&gt;&lt;a rel="noopener" target="_blank" href="https://web.archive.org/web/20250318111137/https://stackoverflow.com/questions/79497821/how-to-execute-a-script-only-after-a-successful-tcp-connection-with-socat"&gt;stackoverflow&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;In the end, I decided to write this program myself.&lt;/p&gt;
+&lt;h1 id="raconn"&gt;&lt;a class="zola-anchor" href="#raconn" aria-label="Anchor link for: raconn"&gt;Raconn&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;Enter &lt;code&gt;raconn&lt;/code&gt; (short for RAce CONNect) is a utility that accepts a list of hostnames and IP addresses as arguments. It attempts to connect to all of them in parallel using separate threads and retains the first successful connection cancelling all the remaining threads. Once connected, it proxies data between stdin and stdout, making it suitable for use as an SSH ProxyCommand.&lt;/p&gt;
+&lt;p&gt;&lt;a rel="noopener" target="_blank" href="https://github.com/izissise/raconn"&gt;Git repository&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;It is written in C using &lt;a rel="noopener" target="_blank" href="https://github.com/jart/cosmopolitan"&gt;cosmopolitan libc&lt;/a&gt;, Some reasons for this choice:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Runs on all major operating systems with a unique static binary&lt;/li&gt;
+&lt;li&gt;Easy 'C' development thanks to sane api defaults&lt;/li&gt;
+&lt;li&gt;Debug enviroment included&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also I'm addicted to sugar so I added &lt;a rel="noopener" target="_blank" href="https://github.com/aartaka/pretty.c"&gt;pretty.c&lt;/a&gt; in the mix.&lt;/p&gt;
+&lt;h1 id="examples"&gt;&lt;a class="zola-anchor" href="#examples" aria-label="Anchor link for: examples"&gt;Examples&lt;/a&gt;&lt;/h1&gt;
+&lt;blockquote class="example"&gt;
+&lt;p class="box-title"&gt;
+&lt;i class="icon"&gt;&lt;/i&gt;example&lt;/p&gt;
+&lt;div&gt;
+&lt;/div&gt;
+&lt;p&gt;Let’s say you have a server with two ifaces, one used for failover,
+if you specify both ip to raconn, even in a failover
+situation, your ssh command will succeed by connecting
+through the second iface and ip. &lt;code&gt;$ ssh ip4failover&lt;/code&gt;&lt;/p&gt;
+&lt;pre data-name="~/.ssh/config" class="z-code"&gt;&lt;code data-name="~/.ssh/config"&gt;&lt;span class="z-text z-plain"&gt;Host ip4failover
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; ProxyCommand raconn %p 233.252.3.1 233.252.4.1
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Port 22
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; User admin
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+&lt;blockquote class="example"&gt;
+&lt;p class="box-title"&gt;
+&lt;i class="icon"&gt;&lt;/i&gt;example&lt;/p&gt;
+&lt;div&gt;
+&lt;/div&gt;
+&lt;p&gt;You have a machine that is accessible on your local network
+and from outside. You only known the machine MAC address and
+its name which resolve to a WAN ip.
+Locally your are connected through both wifi and ethernet.
+&lt;code&gt;$ ssh machine&lt;/code&gt;&lt;/p&gt;
+&lt;pre data-name="~/.ssh/config" class="z-code"&gt;&lt;code data-name="~/.ssh/config"&gt;&lt;span class="z-text z-plain"&gt;Host machine.company
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; ProxyCommand raconn %p machine.company.net 00:00:07:cf:10:0a
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Port 22
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; User admin
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+&lt;blockquote class="example"&gt;
+&lt;p class="box-title"&gt;
+&lt;i class="icon"&gt;&lt;/i&gt;example&lt;/p&gt;
+&lt;div&gt;
+&lt;/div&gt;
+&lt;p&gt;You're trying to figuring out something and &lt;code&gt;raconn&lt;/code&gt; is
+getting in the way. &lt;code&gt;$ ssh -oProxyCommand=none machine.company.net&lt;/code&gt;&lt;/p&gt;
+&lt;pre data-name="~/.ssh/config" class="z-code"&gt;&lt;code data-name="~/.ssh/config"&gt;&lt;span class="z-text z-plain"&gt;Host machine.company.net
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; ProxyCommand raconn %p 2a00:1450:4007:81a::200e fe80::9e4f:642a:15c2:aad7
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; Port 22
+&lt;/span&gt;&lt;span class="z-text z-plain"&gt; User admin
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+&lt;h1 id="how-is-it-made"&gt;&lt;a class="zola-anchor" href="#how-is-it-made" aria-label="Anchor link for: how-is-it-made"&gt;How is it made?&lt;/a&gt;&lt;/h1&gt;
+&lt;h2 id="writing-c-and-dev-environment-setup"&gt;&lt;a class="zola-anchor" href="#writing-c-and-dev-environment-setup" aria-label="Anchor link for: writing-c-and-dev-environment-setup"&gt;Writing C and dev environment setup&lt;/a&gt;&lt;/h2&gt;
+&lt;h3 id="git"&gt;&lt;a class="zola-anchor" href="#git" aria-label="Anchor link for: git"&gt;Git&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;Raconn&lt;/code&gt; is a small project and it only needs only a few versioned files.
+For the first time I tried using &lt;code&gt;.gitignore&lt;/code&gt; as an allowlist:&lt;/p&gt;
+&lt;pre data-lang=".gitignore" class="language-.gitignore z-code"&gt;&lt;code class="language-.gitignore" data-lang=".gitignore"&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-meta z-comment z-genconfig"&gt;&lt;span class="z-comment z-line z-number-sign z-genconfig"&gt;# ignore everything
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;*&lt;/span&gt;
+&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-meta z-comment z-genconfig"&gt;&lt;span class="z-comment z-line z-number-sign z-genconfig"&gt;# except for these
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;!&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;/&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;.&lt;/span&gt;gitignore
+&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;!&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;/&lt;/span&gt;main&lt;span class="z-keyword z-operator z-genconfig"&gt;.&lt;/span&gt;c
+&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;!&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;/&lt;/span&gt;Makefile
+&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;!&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;/&lt;/span&gt;&lt;span class="z-support z-constant z-genconfig"&gt;README&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;.&lt;/span&gt;md
+&lt;/span&gt;&lt;span class="z-source z-genconfig"&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;!&lt;/span&gt;&lt;span class="z-keyword z-operator z-genconfig"&gt;/&lt;/span&gt;&lt;span class="z-support z-constant z-genconfig"&gt;LICENSE&lt;/span&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This has the nice property that no new files or artifacts can be tracked by mistake, and &lt;code&gt;git status&lt;/code&gt; always stays clean.&lt;/p&gt;
+&lt;h3 id="makefile"&gt;&lt;a class="zola-anchor" href="#makefile" aria-label="Anchor link for: makefile"&gt;Makefile&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;For easy build and QA, I use a &lt;code&gt;Makefile&lt;/code&gt; with targets for build, format and lint.&lt;/p&gt;
+&lt;p&gt;It will also downloads the &lt;code&gt;cosmopolitan&lt;/code&gt; toolchain and sets up the &lt;a rel="noopener" target="_blank" href="https://en.wikipedia.org/wiki/Language_Server_Protocol"&gt;LSP&lt;/a&gt; support to get errors and warnings directly in &lt;a rel="noopener" target="_blank" href="https://kate-editor.org/"&gt;kate&lt;/a&gt;
+my source editor of choice.&lt;/p&gt;
+&lt;p&gt;After &lt;a rel="noopener" target="_blank" href="https://github.com/clangd/clangd/issues/1038#issuecomment-2614169354"&gt;some research&lt;/a&gt;, I found that I needed to create two files for &lt;code&gt;clangd&lt;/code&gt; LSP to correctly support &lt;code&gt;cosmopolitan&lt;/code&gt;:&lt;/p&gt;
+&lt;pre data-lang="json" data-name="compile_commands.json" class="language-json z-code"&gt;&lt;code class="language-json" data-lang="json" data-name="compile_commands.json"&gt;&lt;span class="z-source z-json"&gt;&lt;span class="z-meta z-sequence z-json"&gt;&lt;span class="z-punctuation z-section z-sequence z-begin z-json"&gt;[&lt;/span&gt;&lt;span class="z-punctuation z-section z-sequence z-end z-json"&gt;]&lt;/span&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;and&lt;/p&gt;
+&lt;pre data-lang="yaml" data-name=".clangd" class="language-yaml z-code"&gt;&lt;code class="language-yaml" data-lang="yaml" data-name=".clangd"&gt;&lt;span class="z-source z-yaml"&gt;&lt;span class="z-string z-unquoted z-plain z-out z-yaml"&gt;&lt;span class="z-entity z-name z-tag z-yaml"&gt;CompileFlags&lt;/span&gt;&lt;/span&gt;&lt;span class="z-punctuation z-separator z-key-value z-mapping z-yaml"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;span class="z-source z-yaml"&gt; &lt;span class="z-string z-unquoted z-plain z-out z-yaml"&gt;&lt;span class="z-entity z-name z-tag z-yaml"&gt;Add&lt;/span&gt;&lt;/span&gt;&lt;span class="z-punctuation z-separator z-key-value z-mapping z-yaml"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;span class="z-source z-yaml"&gt; &lt;span class="z-punctuation z-definition z-block z-sequence z-item z-yaml"&gt;-&lt;/span&gt; &lt;span class="z-string z-quoted z-double z-yaml"&gt;&lt;span class="z-punctuation z-definition z-string z-begin z-yaml"&gt;&amp;quot;&lt;/span&gt;-isystemcosmocc/include&lt;span class="z-punctuation z-definition z-string z-end z-yaml"&gt;&amp;quot;&lt;/span&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;span class="z-source z-yaml"&gt; &lt;span class="z-punctuation z-definition z-block z-sequence z-item z-yaml"&gt;-&lt;/span&gt; &lt;span class="z-string z-quoted z-double z-yaml"&gt;&lt;span class="z-punctuation z-definition z-string z-begin z-yaml"&gt;&amp;quot;&lt;/span&gt;-include libc/c.inc&lt;span class="z-punctuation z-definition z-string z-end z-yaml"&gt;&amp;quot;&lt;/span&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id="principle"&gt;&lt;a class="zola-anchor" href="#principle" aria-label="Anchor link for: principle"&gt;Principle&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;raconn&lt;/code&gt; tries to connect in parallel to all addresses provided on the command line. The first successful connection cancels the others and is then piped through stdin/stdout, making it suitable for use as an ssh &lt;code&gt;ProxyCommand&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The first step is to resolve each hostname into a list of IPv4 or IPv6 addresses to feed into the &lt;code&gt;connect&lt;/code&gt; syscall.&lt;/p&gt;
+&lt;h3 id="ipv6-local-link"&gt;&lt;a class="zola-anchor" href="#ipv6-local-link" aria-label="Anchor link for: ipv6-local-link"&gt;Ipv6 local link&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Some notes on IPv6 link local addresses,&lt;/p&gt;
+&lt;p&gt;IpV6 has a set of special addresses called link local in the range &lt;code&gt;fe80::/10&lt;/code&gt;.
+All network interface must be assigned one if it wants to use Ipv6.
+These addresses are not routed by routers and allow for ipv6 devices to talk to each other
+without a router on the same link.&lt;/p&gt;
+&lt;p&gt;Because ip6 link local addresses are usually derived from the network interface's mac address, that makes them
+predictable and so it would be nice to be able to use them to connect to the remote machine.&lt;/p&gt;
+&lt;p&gt;The problem is that, unlike IPv4 and global IPv6 addresses (where only the destination address is needed), link local addresses require specifying the interface index in &lt;code&gt;struct sockaddr_in6&lt;/code&gt; when using &lt;code&gt;connect&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Since I don’t want to ask the user which network interface shares a link with the remote machine, I simply perform a &lt;code&gt;connect&lt;/code&gt; syscall for every network interface on the local machine.&lt;/p&gt;
+&lt;p&gt;So a list of locally attached network interfaces is needed, but as of 2025 &lt;code&gt;getifaddrs&lt;/code&gt; in cosmopolitan is
+only implemented for IPv4.&lt;/p&gt;
+&lt;p&gt;That became a whole side quest, implemented across 3 PRs:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a rel="noopener" target="_blank" href="https://github.com/jart/cosmopolitan/pull/1415"&gt;getifaddrs Linux (merged)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a rel="noopener" target="_blank" href="https://github.com/jart/cosmopolitan/pull/1436"&gt;getifaddrs BSD&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a rel="noopener" target="_blank" href="https://github.com/jart/cosmopolitan/pull/1433"&gt;getifaddrs Windows&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="dns-resolution"&gt;&lt;a class="zola-anchor" href="#dns-resolution" aria-label="Anchor link for: dns-resolution"&gt;DNS resolution&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In cosmopolitan, hostname lookup using &lt;code&gt;getaddrinfo&lt;/code&gt; is the courtesy of the musl libc implementation.
+As of 2025, it doesn't support &lt;code&gt;mDns&lt;/code&gt; :/&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;getaddrinfo&lt;/code&gt; returns a linked list of &lt;code&gt;struct addrinfo&lt;/code&gt; which are the ips 4 and 6 the name resolve to.&lt;/p&gt;
+&lt;p&gt;If it returns an Ipv6 link-local address we have to enter the special case described earlier.&lt;/p&gt;
+&lt;h3 id="parallel-connections"&gt;&lt;a class="zola-anchor" href="#parallel-connections" aria-label="Anchor link for: parallel-connections"&gt;Parallel connections&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Because &lt;code&gt;getaddrinfo&lt;/code&gt; &lt;code&gt;getaddrlist&lt;/code&gt; &lt;code&gt;connect&lt;/code&gt; etc are blocking calls, I spawn one thread
+per arguments on the command line each with a small stack size (see cosmo's greenbean).&lt;/p&gt;
+&lt;p&gt;This way all names are tried simultaneously, making the connections truly racy.&lt;/p&gt;
+&lt;h3 id="io-fun"&gt;&lt;a class="zola-anchor" href="#io-fun" aria-label="Anchor link for: io-fun"&gt;IO fun&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To ensure only one connection is kept, I use an atomic variable that is only set once.&lt;/p&gt;
+&lt;p&gt;The winning connection then spawns two final threads that that effectively pipe the socket through stdin/stdout.&lt;/p&gt;
+&lt;h3 id="timeout"&gt;&lt;a class="zola-anchor" href="#timeout" aria-label="Anchor link for: timeout"&gt;Timeout&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Since &lt;code&gt;raconn&lt;/code&gt; will mostly be used in interactive contexts, I want it to fail fast when no hostname is reachable.
+Unfortunately, Posix's &lt;code&gt;connect&lt;/code&gt; doesn't give any easy way to choose a timeout after which the connect should fail.&lt;/p&gt;
+&lt;p&gt;So, I spawn a sibling thread before calling &lt;code&gt;connect&lt;/code&gt; and &lt;code&gt;getaddrinfo&lt;/code&gt; that will &lt;code&gt;pthread_cancel&lt;/code&gt; on the connecting thread
+after a timeout. If &lt;code&gt;connect&lt;/code&gt; succeeds first, it cancels the timeout thread instead.&lt;/p&gt;
+&lt;h1 id="closing-words"&gt;&lt;a class="zola-anchor" href="#closing-words" aria-label="Anchor link for: closing-words"&gt;Closing words&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;You can find &lt;code&gt;raconn&lt;/code&gt; &lt;a rel="noopener" target="_blank" href="https://github.com/izissise/raconn"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Computer addressing is a bit of a mess, but at least it’s possible to abstract some of it once you understand its quirks.&lt;/p&gt;</content></entry><entry xml:lang="en"><title>Nginx Explorer - Upload</title><published>2025-03-01T00:00:00+00:00</published><updated>2025-03-01T00:00:00+00:00</updated><author><name>
 Unknown</name></author><link rel="alternate" type="text/html" href="/posts/ngxp-upload/"/><id>/posts/ngxp-upload/</id><content type="html" xml:base="/posts/ngxp-upload/">&lt;p&gt;After &lt;a href="/posts/ngxp-listing"&gt;listing files&lt;/a&gt; and setting up per &lt;a href="/posts/ngxp-cookie-auth"&gt;directory accesses&lt;/a&gt;,
 we would like to allow some users to upload files.&lt;/p&gt;
 &lt;p&gt;This solution is very hacky, but it has the advantage of requiring only a standard nginx server and a bit of javaScript.&lt;/p&gt;
