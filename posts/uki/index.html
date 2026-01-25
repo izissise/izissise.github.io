@@ -1,0 +1,150 @@
+<!doctype html><html lang=en><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>"><link rel=monetization href=https://ilp.gatehub.net/669637781/eur><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Unified Kernel Image","author":{"@type":"Person","name":"Hugues Morisset","url":"https://blog.izissise.net/about"},"datePublished":"2024-07-12"}</script><title>Unified Kernel Image</title><meta property="og:title" content="Unified Kernel Image"><script defer src=/js/codecopy.js></script><script defer src=/js/ofuscate.js></script><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com//count?p=/posts/uki/&t=Unified Kernel Image"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet media=screen href=/main.css><div class=content><header><nav><a href=/posts>/posts</a>
+<a href=/about>/about</a>
+<a href=/atom.xml>/rss</a>
+|
+<button id=theme type=reset title="switch theme">🌓</button>
+<script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Unified Kernel Image</div><div class=meta><span>Posted on <time datetime=2024-07-12>2024-07-12</time></span>
+<span class=readingtime>4 minutes read</span></div></div><section class=body><h1 id=unified-kernel-image><a class=zola-anchor href=#unified-kernel-image aria-label="Anchor link for: unified-kernel-image">Unified Kernel Image</a></h1><p>UKIs can run on UEFI systems and simplify the distribution of small kernel images. For example, they simplify network booting with iPXE. UKIs make rootfs and kernels composable, making it possible to derive a rootfs for multiple kernel versions with one file for each pair.<p>A Unified Kernel Image (UKI) is a combination of a UEFI boot stub program, a Linux kernel image, an initramfs, and further resources in a single UEFI PE file (device tree, cpu µcode, splash screen, secure boot sig/key, ...). This file can either be directly invoked by the UEFI firmware or through a boot loader.<h1 id=the-simple-way><a class=zola-anchor href=#the-simple-way aria-label="Anchor link for: the-simple-way">The simple way</a></h1><p>If you use a systemd-based OS and want to use UKIs, you're probably better off using <a rel="noopener external" target=_blank href=https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/>systemd-boot</a>.<p>In this post, we aim to create a ready-to-boot UKI for another machine rather than the one we are creating it from.<p>We can use <a rel="noopener external" target=_blank href=https://www.freedesktop.org/software/systemd/man/latest/ukify.html>ukify</a>, which is a dedicated tool to create UKIs, but I'd like to get a little more in-depth on how they are constructed.<h1 id=linux-efi><a class=zola-anchor href=#linux-efi aria-label="Anchor link for: linux-efi">Linux EFI</a></h1><p>The Linux kernel should be compiled with <code>CONFIG_EFI_STUB=y</code> see <a rel="noopener external" target=_blank href=https://docs.kernel.org/admin-guide/efi-stub.html>https://docs.kernel.org/admin-guide/efi-stub.html</a><blockquote class=note><p class=box-title><i class=icon title=note></i>note<div></div><p>When building the kernel with EFI support, the final artifact name in the <code>arch/"$ARCH"/boot/</code>
+directory changes. For <code>X86_64</code>, it will be named <code>bzImage</code>, but for other architectures, it will be <code>vmlinuz.efi</code>.</blockquote><p>Let's find a pre-compiled kernel in the Arch Linux repository<sup class=footnote-reference id=fr-1-1><a href=#fn-1>1</a></sup>:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class=z-storage>export</span><span class="z-variable z-other"> klatest</span><span class=z-keyword>=</span><span>$(</span><span class="z-entity z-name">curl</span><span class="z-punctuation z-definition z-string z-string"> &#39;https://archive.archlinux.org/packages/l/linux/&#39;</span><span class=z-keyword> |</span><span class="z-entity z-name"> xmllint</span><span class=z-constant> --recover --html --xpath</span><span class="z-punctuation z-definition z-string z-string"> &#39;string(//a[last() - 1]/@href)&#39; -</span><span>)</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># We&#39;re only interested in the vmlinuz file</span></span>
+<span class=giallo-l><span class="z-entity z-name">curl</span><span class="z-punctuation z-definition z-string z-string"> &quot;https://archive.archlinux.org/packages/l/linux/${</span><span class="z-variable z-other">klatest</span><span class="z-string z-punctuation z-definition z-string">}&quot;</span><span class=z-keyword> |</span><span class="z-entity z-name"> tar</span><span class=z-constant> --zstd --wildcards --no-anchored  --transform=</span><span class="z-punctuation z-definition z-string z-string">&#39;s:.*/::&#39;</span><span class=z-constant> -xf</span><span class="z-string z-punctuation z-definition z-string"> - &#39;vmlinuz&#39;</span></span></code></pre><p>We can see with <code>readpe</code> that the file is indeed a PE executable:<details><summary>readpe vmlinuz</summary><div><pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>DOS Header</span></span>
+<span class=giallo-l><span>    Magic number:                    0x5a4d (MZ)</span></span>
+<span class=giallo-l><span>    Bytes in last page:              0</span></span>
+<span class=giallo-l><span>    Pages in file:                   0</span></span>
+<span class=giallo-l><span>    Relocations:                     0</span></span>
+<span class=giallo-l><span>    Size of header in paragraphs:    0</span></span>
+<span class=giallo-l><span>    Minimum extra paragraphs:        0</span></span>
+<span class=giallo-l><span>    Maximum extra paragraphs:        0</span></span>
+<span class=giallo-l><span>    Initial (relative) SS value:     0</span></span>
+<span class=giallo-l><span>    Initial SP value:                0</span></span>
+<span class=giallo-l><span>    Initial IP value:                0</span></span>
+<span class=giallo-l><span>    Initial (relative) CS value:     0</span></span>
+<span class=giallo-l><span>    Address of relocation table:     0</span></span>
+<span class=giallo-l><span>    Overlay number:                  0</span></span>
+<span class=giallo-l><span>    OEM identifier:                  0</span></span>
+<span class=giallo-l><span>    OEM information:                 0</span></span>
+<span class=giallo-l><span>    PE header offset:                0x40</span></span>
+<span class=giallo-l><span>COFF/File header</span></span>
+<span class=giallo-l><span>    Machine:                         0x8664 IMAGE_FILE_MACHINE_AMD64</span></span>
+<span class=giallo-l><span>    Number of sections:              4</span></span>
+<span class=giallo-l><span>    Date/time stamp:                 0 (Thu, 01 Jan 1970 00:00:00 UTC)</span></span>
+<span class=giallo-l><span>    Symbol Table offset:             0</span></span>
+<span class=giallo-l><span>    Number of symbols:               1</span></span>
+<span class=giallo-l><span>    Size of optional header:         0xa0</span></span>
+<span class=giallo-l><span>    Characteristics:                 0x206</span></span>
+<span class=giallo-l><span>    Characteristics names</span></span>
+<span class=giallo-l><span>                                         IMAGE_FILE_EXECUTABLE_IMAGE</span></span>
+<span class=giallo-l><span>                                         IMAGE_FILE_LINE_NUMS_STRIPPED</span></span>
+<span class=giallo-l><span>                                         IMAGE_FILE_DEBUG_STRIPPED</span></span>
+<span class=giallo-l><span>Optional/Image header</span></span>
+<span class=giallo-l><span>    Magic number:                    0x20b (PE32+)</span></span>
+<span class=giallo-l><span>    Linker major version:            2</span></span>
+<span class=giallo-l><span>    Linker minor version:            20</span></span>
+<span class=giallo-l><span>    Size of .text section:           0xc99000</span></span>
+<span class=giallo-l><span>    Size of .data section:           0x5f000</span></span>
+<span class=giallo-l><span>    Size of .bss section:            0</span></span>
+<span class=giallo-l><span>    Entrypoint:                      0xc93579</span></span>
+<span class=giallo-l><span>    Address of .text section:        0x5000</span></span>
+<span class=giallo-l><span>    ImageBase:                       0</span></span>
+<span class=giallo-l><span>    Alignment of sections:           0x1000</span></span>
+<span class=giallo-l><span>    Alignment factor:                0x200</span></span>
+<span class=giallo-l><span>    Major version of required OS:    0</span></span>
+<span class=giallo-l><span>    Minor version of required OS:    0</span></span>
+<span class=giallo-l><span>    Major version of image:          3</span></span>
+<span class=giallo-l><span>    Minor version of image:          0</span></span>
+<span class=giallo-l><span>    Major version of subsystem:      0</span></span>
+<span class=giallo-l><span>    Minor version of subsystem:      0</span></span>
+<span class=giallo-l><span>    Size of image:                   0xcfd000</span></span>
+<span class=giallo-l><span>    Size of headers:                 0x1000</span></span>
+<span class=giallo-l><span>    Checksum:                        0</span></span>
+<span class=giallo-l><span>    Subsystem required:              0xa (IMAGE_SUBSYSTEM_EFI_APPLICATION)</span></span>
+<span class=giallo-l><span>    DLL characteristics:             0x100</span></span>
+<span class=giallo-l><span>    DLL characteristics names</span></span>
+<span class=giallo-l><span>                                         IMAGE_DLLCHARACTERISTICS_NX_COMPAT</span></span>
+<span class=giallo-l><span>    Size of stack to reserve:        0</span></span>
+<span class=giallo-l><span>    Size of stack to commit:         0</span></span>
+<span class=giallo-l><span>    Size of heap space to reserve:   0</span></span>
+<span class=giallo-l><span>    Size of heap space to commit:    0</span></span>
+<span class=giallo-l><span>Data directories</span></span>
+<span class=giallo-l><span>Imported functions</span></span>
+<span class=giallo-l><span>Exported functions</span></span>
+<span class=giallo-l><span>Sections</span></span>
+<span class=giallo-l><span>    Section</span></span>
+<span class=giallo-l><span>        Name:                            .setup</span></span>
+<span class=giallo-l><span>        Virtual Size:                    0x3000 (12288 bytes)</span></span>
+<span class=giallo-l><span>        Virtual Address:                 0x1000</span></span>
+<span class=giallo-l><span>        Size Of Raw Data:                0x3000 (12288 bytes)</span></span>
+<span class=giallo-l><span>        Pointer To Raw Data:             0x1000</span></span>
+<span class=giallo-l><span>        Number Of Relocations:           0</span></span>
+<span class=giallo-l><span>        Characteristics:                 0x42000040</span></span>
+<span class=giallo-l><span>        Characteristic Names</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_CNT_INITIALIZED_DATA</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_DISCARDABLE</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_READ</span></span>
+<span class=giallo-l><span>    Section</span></span>
+<span class=giallo-l><span>        Name:                            .compat</span></span>
+<span class=giallo-l><span>        Virtual Size:                    0x1000 (4096 bytes)</span></span>
+<span class=giallo-l><span>        Virtual Address:                 0x4000</span></span>
+<span class=giallo-l><span>        Size Of Raw Data:                0x1000 (4096 bytes)</span></span>
+<span class=giallo-l><span>        Pointer To Raw Data:             0x4000</span></span>
+<span class=giallo-l><span>        Number Of Relocations:           0</span></span>
+<span class=giallo-l><span>        Characteristics:                 0x42000040</span></span>
+<span class=giallo-l><span>        Characteristic Names</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_CNT_INITIALIZED_DATA</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_DISCARDABLE</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_READ</span></span>
+<span class=giallo-l><span>    Section</span></span>
+<span class=giallo-l><span>        Name:                            .text</span></span>
+<span class=giallo-l><span>        Virtual Size:                    0xc99000 (13209600 bytes)</span></span>
+<span class=giallo-l><span>        Virtual Address:                 0x5000</span></span>
+<span class=giallo-l><span>        Size Of Raw Data:                0xc99000 (13209600 bytes)</span></span>
+<span class=giallo-l><span>        Pointer To Raw Data:             0x5000</span></span>
+<span class=giallo-l><span>        Number Of Relocations:           0</span></span>
+<span class=giallo-l><span>        Characteristics:                 0x60000020</span></span>
+<span class=giallo-l><span>        Characteristic Names</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_CNT_CODE</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_EXECUTE</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_READ</span></span>
+<span class=giallo-l><span>    Section</span></span>
+<span class=giallo-l><span>        Name:                            .data</span></span>
+<span class=giallo-l><span>        Virtual Size:                    0x5f000 (389120 bytes)</span></span>
+<span class=giallo-l><span>        Virtual Address:                 0xc9e000</span></span>
+<span class=giallo-l><span>        Size Of Raw Data:                0x1200 (4608 bytes)</span></span>
+<span class=giallo-l><span>        Pointer To Raw Data:             0xc9e000</span></span>
+<span class=giallo-l><span>        Number Of Relocations:           0</span></span>
+<span class=giallo-l><span>        Characteristics:                 0xc0000040</span></span>
+<span class=giallo-l><span>        Characteristic Names</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_CNT_INITIALIZED_DATA</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_READ</span></span>
+<span class=giallo-l><span>                                             IMAGE_SCN_MEM_WRITE</span></span></code></pre></div></details><p>With this, we can already boot Linux directly from the UEFI:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">qemu-system-x86_64</span><span class=z-constant> -m</span><span class=z-string> 512M</span><span class=z-constant> -enable-kvm -nographic -cpu</span><span class=z-string> host</span><span class=z-constant> -bios</span><span class=z-string> /usr/share/ovmf/OVMF.fd</span><span class=z-constant> -drive</span><span class=z-string> file=fat:rw:./,format=raw</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># Press ESC to enter uefi shell</span></span>
+<span class=giallo-l><span class="z-entity z-name">fs0:vmlinuz</span><span class=z-string> console=ttyS0 loglevel=</span><span class=z-constant>6</span></span></code></pre><iframe loading=lazy width=656 height=443 class=center frameborder=0 type=text/svg+xml src=/posts/uki/efi_kernel.term.svg data-display-frame=1715></iframe><p>The kernel crashed because there is no root FS, but it successfully booted as an EFI app.<h1 id=sd-boot><a class=zola-anchor href=#sd-boot aria-label="Anchor link for: sd-boot">SD Boot</a></h1><p>Linux doesn't support UKIs directly, so we need glue code to copy UKI sections to memory and pass control to Linux.
+In the future UKI might directly be supported by the kernel, see <a rel="noopener external" target=_blank href=https://github.com/rhboot/nmbl-poc>nmbl</a>.<p>For now, we need to compile systemd efi stub as the bootloader to put in the UKI so it copies Linux and initrd to the right place in memory, displays the splash screen, measures secure boot values, and finally gives control to Linux with the cmdline and dtb.<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">git</span><span class=z-string> clone https://github.com/systemd/systemd.git</span></span>
+<span class=giallo-l><span class=z-support>cd</span><span class=z-string> systemd</span></span>
+<span class=giallo-l><span class="z-entity z-name">meson</span><span class=z-string> setup build</span></span>
+<span class=giallo-l><span class=z-support>cd</span><span class=z-string> build</span></span>
+<span class=giallo-l><span class="z-entity z-name">ninja</span><span class=z-string> src/boot/efi/linuxx64.efi.stub</span></span>
+<span class=giallo-l><span class="z-entity z-name">cp</span><span class=z-string> src/boot/efi/linuxx64.efi.stub ../../uki_base.efi</span></span></code></pre><h1 id=populating-uki><a class=zola-anchor href=#populating-uki aria-label="Anchor link for: populating-uki">Populating UKI</a></h1><p>UKIs have a <code>PE</code> file layout with standardized sections<sup class=footnote-reference id=fr-2-1><a href=#fn-2>2</a></sup>. We will use the following:<ul><li><code>.linux</code> where we put the kernel; we can just copy <code>vmlinuz</code><li><code>.osrel</code> a key-value file with metadata about the booted image<li><code>.initrd</code> the initramfs that will be loaded with the kernel</ul><p>Previously we <a href="/posts/initramfs/#:~:text=If%20you%27re%20following%20along,archive%21">built a minimal rootfs</a> that we are going to use in our UKI<p>Creating a UKI involves mainly <code>objcopy</code> with the right parameters to pack all data into one <code>PE</code> file.<p>We create two files that will be the UKI metadata and kernel command line:<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span># cmdline.txt</span></span>
+<span class=giallo-l><span>console=ttyS0 loglevel=6</span></span></code></pre><pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span># osrel.txt</span></span>
+<span class=giallo-l><span>NAME=UKI</span></span>
+<span class=giallo-l><span>PRETTY_NAME=UKI</span></span>
+<span class=giallo-l><span>VERSION_CODENAME=1</span></span>
+<span class=giallo-l><span>ID=1</span></span>
+<span class=giallo-l><span>BUILD_ID=1</span></span></code></pre><p>We have <code>uki_base.efi</code> our shell UKI image; we now just have to fill the aforementioned sections.<p>The composition can be done in any order using multiple calls to <code>objcopy</code>.<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># sd_boot_stub randomize the virtual memory address (vma) so we first need to get the `IMAGE_BASE` to put the section after the base.</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># we give enough room between sections vma so they don&#39;t overlap for big files</span></span>
+<span class=giallo-l><span class=z-storage>export</span><span class="z-variable z-other"> IMAGE_BASE</span><span class=z-keyword>=</span><span>$(</span><span class="z-entity z-name">objdump</span><span class=z-constant> -x</span><span class="z-punctuation z-definition z-string z-string"> &quot;uki_base.efi&quot;</span><span class=z-keyword> |</span><span class="z-entity z-name"> grep</span><span class=z-string> ImageBase</span><span class=z-keyword> |</span><span class="z-entity z-name"> awk</span><span class="z-punctuation z-definition z-string z-string"> &#39;{print $2}&#39;</span><span>)</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># copy files into UKI section</span></span>
+<span class=giallo-l><span class="z-entity z-name">objcopy</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --add-section</span><span class=z-string> .osrel=osrel.txt</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --add-section</span><span class=z-string> .cmdline=cmdline.txt</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --add-section</span><span class=z-string> .initrd=initramfs.cpio</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --add-section</span><span class=z-string> .linux=vmlinuz</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --change-section-vma</span><span class=z-string> .osrel=</span><span class="z-variable z-other">$( (( off</span><span class=z-keyword> =</span><span class=z-constant> 16#00020000</span><span class=z-keyword> +</span><span class=z-constant> 16</span><span class="z-variable z-other">#$IMAGE_BASE ));</span><span class=z-support> printf</span><span class=z-string> 0x%x</span><span class="z-variable z-other"> $off )</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --change-section-vma</span><span class=z-string> .cmdline=</span><span class="z-variable z-other">$( (( off</span><span class=z-keyword> =</span><span class=z-constant> 16#00020200</span><span class=z-keyword> +</span><span class=z-constant> 16</span><span class="z-variable z-other">#$IMAGE_BASE ));</span><span class=z-support> printf</span><span class=z-string> 0x%x</span><span class="z-variable z-other"> $off )</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --change-section-vma</span><span class=z-string> .initrd=</span><span class="z-variable z-other">$( (( off</span><span class=z-keyword> =</span><span class=z-constant> 16#00100000</span><span class=z-keyword> +</span><span class=z-constant> 16</span><span class="z-variable z-other">#$IMAGE_BASE ));</span><span class=z-support> printf</span><span class=z-string> 0x%x</span><span class="z-variable z-other"> $off )</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --change-section-vma</span><span class=z-string> .linux=</span><span class="z-variable z-other">$( (( off</span><span class=z-keyword> =</span><span class=z-constant> 16#02000000</span><span class=z-keyword> +</span><span class=z-constant> 16</span><span class="z-variable z-other">#$IMAGE_BASE ));</span><span class=z-support> printf</span><span class=z-string> 0x%x</span><span class="z-variable z-other"> $off )</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --set-section-flags</span><span class=z-string> .linux=code,readonly</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-string>    uki_base.efi bootx64.efi</span></span></code></pre><h1 id=test-with-qemu><a class=zola-anchor href=#test-with-qemu aria-label="Anchor link for: test-with-qemu">Test with Qemu</a></h1><p>Create a directory and file <code>efi/boot/bootx64.efi</code><sup class=footnote-reference id=fr-3-1><a href=#fn-3>3</a></sup>, then run Qemu:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">mkdir</span><span class=z-constant> -p</span><span class=z-string> efi/boot</span></span>
+<span class=giallo-l><span class="z-entity z-name">cp</span><span class=z-string> bootx64.efi efi/boot/</span></span>
+<span class=giallo-l><span class="z-entity z-name">qemu-system-x86_64</span><span class=z-constant> -m</span><span class=z-string> 512M</span><span class=z-constant> -enable-kvm -nographic -bios</span><span class=z-string> /usr/share/ovmf/OVMF.fd</span><span class=z-constant> -cpu</span><span class=z-string> host</span><span class=z-constant> -drive</span><span class=z-string> file=fat:rw:./,format=raw</span></span></code></pre><iframe loading=lazy width=656 height=443 class=center frameborder=0 type=text/svg+xml src=/posts/uki/uki.term.svg data-display-frame=600></iframe><h1 id=conclusion><a class=zola-anchor href=#conclusion aria-label="Anchor link for: conclusion">Conclusion</a></h1><p>We created a single UKI file that contains a kernel, initramfs, cmdline, and metadata. It is easy to distribute and boot with any UEFI-compatible BIOS of the same architecture. We can imagine giving the UKI to U-Boot or iPXE to boot it in even more environments.<p>Next time, we will see how to sign the UKI so it works with secure boot.<section class=footnotes><ol class=footnotes-list><li id=fn-1><p>Found this usage of curl + xmllint <a rel="noopener external" target=_blank href=https://www.joshmcarthur.com/til/2018/06/19/extracting-xml-data-with-curl-and-xmllint.html>here</a> <a href=#fr-1-1>↩</a><li id=fn-2><p>More sections can be found in <a rel="noopener external" target=_blank href=https://www.freedesktop.org/software/systemd/man/latest/ukify.html#%5BUKI%5D%20section>ukify manpage</a>. <a href=#fr-2-1>↩</a><li id=fn-3><p>A FAT partition with a file <code>efi/boot/bootx64.efi</code> will be booted automatically by most UEFI implementations. The file suffix depends on the target CPU architecture. <a href=#fr-3-1>↩</a></ol></section></section></article></main></div><footer><hr><nav><a rel=me href=/about>Hugues</a> |
+<a rel=atom href=/atom.xml class="rss icon" title=rss></a><a rel=me href=https://github.com/izissise class="github icon" title=github></a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class="stack icon" title=stackoverflow></a><a rel=me href=https://links.izissise.net/ class="shaarli icon" title=shaarli></a><a rel=me href=https://www.linkedin.com/in/huguesmorisset/ class="linkedin icon" title=linkedin></a><a rel=me href="=MWM2IDZ1cDN0ATMwEDMyEjYxEmM5QDMwIWNmFjYxQDMkFDNyYDNxATMygDNwEDOwEWM3MjM1QDM" class="m-protected matrix icon" title=matrix></a><a rel=me href="==wYwQWMiBjZ0QDMhJjM1QDM2AjMzIWM0ADZxQjM2QTMwYGN2ADZwITMiFTYyEDN2AzYwgDN3ATNxQDMhJjM1QDM" class="m-protected mail icon" title=email></a>| &#169; 2026

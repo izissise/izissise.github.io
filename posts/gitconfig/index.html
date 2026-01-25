@@ -1,0 +1,106 @@
+<!doctype html><html lang=en><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>"><link rel=monetization href=https://ilp.gatehub.net/669637781/eur><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Git Config","author":{"@type":"Person","name":"Hugues Morisset","url":"https://blog.izissise.net/about"},"datePublished":"2024-08-04"}</script><title>Git Config</title><meta property="og:title" content="Git Config"><script defer src=/js/codecopy.js></script><script defer src=/js/ofuscate.js></script><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com//count?p=/posts/gitconfig/&t=Git Config"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet media=screen href=/main.css><div class=content><header><nav><a href=/posts>/posts</a>
+<a href=/about>/about</a>
+<a href=/atom.xml>/rss</a>
+|
+<button id=theme type=reset title="switch theme">🌓</button>
+<script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Git Config</div><div class=meta><span>Posted on <time datetime=2024-08-04>2024-08-04</time></span>
+<span class=readingtime>2 minutes read</span></div></div><section class=body><p>Git can change configuration depending on the directory you're in.
+By using this feature, you can create a directory structure with context-aware Git configurations.<p>Using <code>includeIf</code> in <code>~/.gitconfig</code>:<pre class="giallo z-code"><code data-lang=ini data-name=/.gitconfig><span class=giallo-l><span class="z-entity z-name">[include]</span></span>
+<span class=giallo-l><span class=z-keyword>    path</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;~/.config/git/main.gitconfig&quot;</span></span>
+<span class=giallo-l><span class="z-entity z-name">[includeIf &quot;gitdir:~/work/companyA/**&quot;]</span></span>
+<span class=giallo-l><span class=z-keyword>    path</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;~/.config/git/companyA.gitconfig&quot;</span></span>
+<span class=giallo-l><span class="z-entity z-name">[includeIf &quot;gitdir:~/work/companyB/**&quot;]</span></span>
+<span class=giallo-l><span class=z-keyword>    path</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;~/.config/git/companyB.gitconfig&quot;</span></span></code></pre><p>Here we everything under <code>~/work/companyA/</code>
+will get the git configuration from <code>~/.config/git/companyA.gitconfig</code>,
+and similarly for <code>companyB</code>.<h1 id=identity><a class=zola-anchor href=#identity aria-label="Anchor link for: identity">Identity</a></h1><p>Now we can set our special configuration in its own file for <code>companyA</code>:<pre class="giallo z-code"><code data-lang=ini data-name=~/.config/git/companyA.gitconfig><span class=giallo-l><span class="z-entity z-name">[user]</span></span>
+<span class=giallo-l><span class=z-keyword>  name</span><span> = Hugues</span></span>
+<span class=giallo-l><span class=z-keyword>  email</span><span> = h@companyA.com</span></span>
+<span class=giallo-l><span class=z-keyword>  signingkey</span><span> = ~/.ssh/keys/compA</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[commit]</span></span>
+<span class=giallo-l><span class=z-keyword>   gpgsign</span><span> = true</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[gpg]</span></span>
+<span class=giallo-l><span class=z-keyword>   format</span><span> = ssh</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[gpg &quot;ssh&quot;]</span></span>
+<span class=giallo-l><span class=z-keyword>  allowedSignersFile</span><span> = ~/.ssh/git_allowed_signers</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># git clone compA:repo</span></span>
+<span class=giallo-l><span class="z-entity z-name">[url &quot;ssh://git@compA.com/&quot;]</span></span>
+<span class=giallo-l><span class=z-keyword>        insteadOf</span><span> = compA:</span></span>
+<span class=giallo-l><span class=z-keyword>        pushInsteadOf</span><span> = compA:</span></span></code></pre><p>This allows us to easily have separate identities depending on the directory you're in.
+We also get commits signed with the SSH key that we use to access the repository.
+Finally, we make an alias for the company URL, making it simpler to clone new repos or to modify the URL everywhere if the repository ever changes URL.<h1 id=global-preferences><a class=zola-anchor href=#global-preferences aria-label="Anchor link for: global-preferences">Global preferences</a></h1><p>We usually want to retain certain configurations and aliases no matter the directory.<pre class="giallo z-code"><code data-lang=ini data-name=~/.config/git/main.gitconfig><span class=giallo-l><span class="z-entity z-name">[core]</span></span>
+<span class=giallo-l><span class=z-keyword>        excludesfile</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;~/.config/git/main.gitignore&quot;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[commit]</span></span>
+<span class=giallo-l><span class=z-keyword>        template</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;~/.config/git/main.commit.template&quot;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[init]</span></span>
+<span class=giallo-l><span class=z-keyword>        defaultBranch</span><span> = main</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[pull]</span></span>
+<span class=giallo-l><span class=z-keyword>        ff</span><span> = true</span></span>
+<span class=giallo-l><span class=z-keyword>        commit</span><span> = true</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[push]</span></span>
+<span class=giallo-l><span class=z-keyword>        default</span><span> = simple</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[merge]</span></span>
+<span class=giallo-l><span class=z-keyword>        ff</span><span> = false</span></span>
+<span class=giallo-l><span class=z-keyword>        commit</span><span> = no</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[rerere]</span></span>
+<span class=giallo-l><span class=z-keyword>        enabled</span><span> = true</span></span>
+<span class=giallo-l><span class=z-keyword>        autoupdate</span><span> = true</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[rebase]</span></span>
+<span class=giallo-l><span class=z-keyword>        stats</span><span> = true</span></span>
+<span class=giallo-l><span class=z-keyword>        autoStash</span><span> = true</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[receive]</span></span>
+<span class=giallo-l><span class=z-keyword>        denyCurrentBranch</span><span> = updateInstead</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[color]</span></span>
+<span class=giallo-l><span class=z-keyword>        diff</span><span> = auto</span></span>
+<span class=giallo-l><span class=z-keyword>        status</span><span> = auto</span></span>
+<span class=giallo-l><span class=z-keyword>        branch</span><span> = auto</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[color &quot;status&quot;]</span></span>
+<span class=giallo-l><span class=z-keyword>        added</span><span> = green</span></span>
+<span class=giallo-l><span class=z-keyword>        changed</span><span> = red</span></span>
+<span class=giallo-l><span class=z-keyword>        untracked</span><span> = yellow</span></span>
+<span class=giallo-l><span class=z-keyword>        branch</span><span> = magenta</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-entity z-name">[alias]</span></span>
+<span class=giallo-l><span class=z-keyword>        ci</span><span> = commit</span></span>
+<span class=giallo-l><span class=z-keyword>        co</span><span> = checkout</span></span>
+<span class=giallo-l><span class=z-keyword>        sw</span><span> = switch</span></span>
+<span class=giallo-l><span class=z-keyword>        st</span><span> = status -sb</span></span>
+<span class=giallo-l><span class=z-keyword>        br</span><span> = branch -vv</span></span>
+<span class=giallo-l><span class=z-keyword>        cl</span><span> = clone --recursive</span></span>
+<span class=giallo-l><span class=z-keyword>        push-force</span><span> = push --force-with-lease</span></span>
+<span class=giallo-l><span class=z-keyword>        publish</span><span> =</span><span class="z-punctuation z-definition z-string z-string"> &quot;!git push -u origin `git symbolic-ref HEAD | sed -e &#39;s#^refs/heads/##&#39;`&quot;</span></span>
+<span class=giallo-l><span class=z-keyword>        serve</span><span> = !git daemon --</span><span class=z-keyword>base-path</span><span>=. --export-all --</span><span class=z-keyword>enable</span><span>=receive-pack --reuseaddr --informative-errors --verbose</span></span>
+<span class=giallo-l><span class=z-keyword>        env</span><span> = !env</span></span></code></pre><p>Here we set up a global <code>gitignore</code>. In it, there are IDE configuration paths and a line local-untracked,
+which allows having a local scratchpad in every git project that won't end up in source revision.<p>We choose the main default branch name, and there are preferred default behaviors for <code>push</code>, <code>pull</code>, and <code>merge</code>.<h1 id=commit-template><a class=zola-anchor href=#commit-template aria-label="Anchor link for: commit-template">Commit template</a></h1><p>It will appear every time you use the <code>git commit</code> command.
+It is a good place to remind you what you should write
+and it can be overridden for a specific company if they have a different policy.<p>Here we use good practices from the internet:<pre class="giallo z-code"><code data-lang=git-commit data-name=~/.config/git/main.commit.template><span class=giallo-l></span>
+<span class=giallo-l><span class=z-comment># Title No more than 50 chars. ##### stop here: #</span></span>
+<span class=giallo-l><span class=z-comment># Title: Summary, imperative, start upper case, don&#39;t end with a period</span></span>
+<span class=giallo-l><span class=z-comment># Remember blank line between title and body.</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-comment># Body: Explain *what* and *why* (not *how*). Include issue ID.</span></span>
+<span class=giallo-l><span class=z-comment># Wrap at 72 chars. ################################## which is here: #</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-comment># At the end: Include Co-authored-by for all contributors.</span></span>
+<span class=giallo-l><span class=z-comment># Include at least one empty line before it. Format:</span></span>
+<span class=giallo-l><span class=z-comment># Co-authored-by: name &lt;user@users.noreply.com&gt;</span></span>
+<span class=giallo-l><span class=z-comment>#</span></span>
+<span class=giallo-l><span class=z-comment># Template inspired by:</span></span>
+<span class=giallo-l><span class=z-comment># How to Write a Git Commit Message:</span></span>
+<span class=giallo-l><span class=z-comment># https://chris.beams.io/posts/git-commit/</span></span></code></pre><h1 id=update-02-2025><a class=zola-anchor href=#update-02-2025 aria-label="Anchor link for: update-02-2025">Update 02-2025</a></h1><p>I recently updated my config following this excellent post <a rel="noopener external" target=_blank href=https://blog.gitbutler.com/how-git-core-devs-configure-git/>https://blog.gitbutler.com/how-git-core-devs-configure-git/</a><p>Happy versionning!</section></article></main></div><footer><hr><nav><a rel=me href=/about>Hugues</a> |
+<a rel=atom href=/atom.xml class="rss icon" title=rss></a><a rel=me href=https://github.com/izissise class="github icon" title=github></a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class="stack icon" title=stackoverflow></a><a rel=me href=https://links.izissise.net/ class="shaarli icon" title=shaarli></a><a rel=me href=https://www.linkedin.com/in/huguesmorisset/ class="linkedin icon" title=linkedin></a><a rel=me href="=MWM2IDZ1cDN0ATMwEDMyEjYxEmM5QDMwIWNmFjYxQDMkFDNyYDNxATMygDNwEDOwEWM3MjM1QDM" class="m-protected matrix icon" title=matrix></a><a rel=me href="==wYwQWMiBjZ0QDMhJjM1QDM2AjMzIWM0ADZxQjM2QTMwYGN2ADZwITMiFTYyEDN2AzYwgDN3ATNxQDMhJjM1QDM" class="m-protected mail icon" title=email></a>| &#169; 2026
