@@ -1,0 +1,58 @@
+<!doctype html><html lang=en><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>"><link rel=monetization href=https://ilp.gatehub.net/669637781/eur><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Initramfs","author":{"@type":"Person","name":"Hugues Morisset","url":"https://blog.izissise.net/about"},"datePublished":"2024-03-03"}</script><title>Initramfs</title><meta property="og:title" content="Initramfs"><script defer src=/js/codecopy.js></script><script defer src=/js/ofuscate.js></script><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com//count?p=/posts/initramfs/&t=Initramfs"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet media=screen href=/main.css><div class=content><header><nav><a href=/posts>/posts</a>
+<a href=/about>/about</a>
+<a href=/atom.xml>/rss</a>
+|
+<button id=theme type=reset title="switch theme">🌓</button>
+<script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Initramfs</div><div class=meta><span>Posted on <time datetime=2024-03-03>2024-03-03</time></span>
+<span class=readingtime>2 minutes read</span></div></div><section class=body><h1 id=linux-basic-initramfs><a class=zola-anchor href=#linux-basic-initramfs aria-label="Anchor link for: linux-basic-initramfs">Linux basic initramfs</a></h1><p>With a compiled kernel image, it can be useful to load your own <a rel="noopener external" target=_blank href=https://en.wikipedia.org/wiki/Initial_ramdisk>initramfs</a>:<ul><li>make it as small as possible considering the features you need<li>create a minimal test environment for the kernel image<li>mount a remote filesystem as the root<li>your own reason</ul><p>Anyways, with the <a rel="noopener external" target=_blank href=https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt>official documentation</a> help,
+let's create an initramfs.<h1 id=tool-compilation><a class=zola-anchor href=#tool-compilation aria-label="Anchor link for: tool-compilation">Tool compilation</a></h1><p>We need to gen_init_cpio tool that can found in the kernel repository:<ul><li><a rel="noopener external" target=_blank href=https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c>gen_init_cpio.c</a></ul><p><code>gen_init_cpio.c</code> needs to be compiled:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">wget</span><span class=z-constant> -O</span><span class="z-string z-punctuation z-definition z-string"> gen_init_cpio.c &#39;https://raw.githubusercontent.com/torvalds/linux/v6.7/usr/gen_init_cpio.c&#39;</span></span>
+<span class=giallo-l><span class="z-entity z-name">gcc</span><span class=z-constant> -o</span><span class=z-string> gen_init_cpio gen_init_cpio.c</span></span></code></pre><p>Now it is ready for use.<h1 id=init-hello-world><a class=zola-anchor href=#init-hello-world aria-label="Anchor link for: init-hello-world">Init hello world</a></h1><p>Let's create an hello world init program that the kernel can execute to show that everything works correctly:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class=z-support>printf</span><span class="z-punctuation z-definition z-string z-string"> &#39;%s\n&#39; &#39;#include &lt;stdio.h&gt;&#39; &#39;#include &lt;unistd.h&gt;&#39; &#39;int main() { printf(&quot;Hello world!\n&quot;); sleep(999999999); }&#39;</span><span class=z-keyword> |</span><span class="z-entity z-name"> gcc</span><span class=z-constant> -fpic -static -xc</span><span class=z-string> -</span><span class=z-constant> -o</span><span class=z-string> init</span></span></code></pre><h1 id=basic-initramfs><a class=zola-anchor href=#basic-initramfs aria-label="Anchor link for: basic-initramfs">Basic Initramfs</a></h1><p>Here is a basic initramfs description, we give it to <code>gen_init_cpio</code> directly:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">./gen_init_cpio</span><span class=z-constant> -t 0 -c</span><span class=z-string> -</span><span class=z-keyword> &gt;</span><span class=z-string> initramfs.cpio</span><span class=z-keyword> &lt;&lt;</span><span class="z-punctuation z-definition z-string">EOF</span></span>
+<span class=giallo-l><span class=z-string># this is a file containing newline separated entries that</span></span>
+<span class=giallo-l><span class=z-string># describe the files to be included in the initramfs archive:</span></span>
+<span class=giallo-l><span class=z-string># # a comment</span></span>
+<span class=giallo-l><span class=z-string># file &lt;name&gt; &lt;location&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt; [&lt;hard links&gt;]</span></span>
+<span class=giallo-l><span class=z-string># dir &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span>
+<span class=giallo-l><span class=z-string># nod &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt; &lt;dev_type&gt; &lt;maj&gt; &lt;min&gt;</span></span>
+<span class=giallo-l><span class=z-string># slink &lt;name&gt; &lt;target&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span>
+<span class=giallo-l><span class=z-string># pipe &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span>
+<span class=giallo-l><span class=z-string># sock &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-string># Root directory</span></span>
+<span class=giallo-l><span class=z-string>dir . 1755 0 0</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-string># common directories</span></span>
+<span class=giallo-l><span class=z-string>dir proc 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir dev 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir bin 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir sys 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir run 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir mnt 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir etc 1775 0 0</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-string># symlink /sbin -&gt; /bin</span></span>
+<span class=giallo-l><span class=z-string>slink bin /sbin 1744 0 0</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-string># common devices</span></span>
+<span class=giallo-l><span class=z-string>dir dev/pts 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir dev/shm 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>dir dev/udev 1775 0 0</span></span>
+<span class=giallo-l><span class=z-string>nod dev/zero 1666 0 0 c 1 5</span></span>
+<span class=giallo-l><span class=z-string>nod dev/null 1666 0 0 c 1 3</span></span>
+<span class=giallo-l><span class=z-string>nod dev/console 1622 0 0 c 5 1</span></span>
+<span class=giallo-l><span class=z-string>nod dev/loop0 1644 0 0 b 7 0</span></span>
+<span class=giallo-l><span class=z-string>nod dev/ttyS0 1666 0 0 c 4 64</span></span>
+<span class=giallo-l><span class=z-string>nod dev/tty 1666 0 0 c 5 0</span></span>
+<span class=giallo-l><span class=z-string>nod dev/ptmx 1666 0 0 c 5 2</span></span>
+<span class=giallo-l><span class=z-string>nod dev/random 1444 0 0 c 1 8</span></span>
+<span class=giallo-l><span class=z-string>nod dev/urandom 1444 0 0 c 1 9</span></span>
+<span class=giallo-l><span class=z-string>slink dev/core /proc/kcore 1777 0 0</span></span>
+<span class=giallo-l><span class=z-string>slink dev/fd /proc/self/fd 1777 0 0</span></span>
+<span class=giallo-l><span class=z-string>slink dev/stdout /proc/self/fd/1 1777 0 0</span></span>
+<span class=giallo-l><span class=z-string>slink dev/stdin /proc/self/fd/0 1777 0 0</span></span>
+<span class=giallo-l><span class=z-string>slink dev/stderr /proc/self/fd/2 1777 0 0</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-string># include previously compiled init</span></span>
+<span class=giallo-l><span class=z-string># make sure the path is /init</span></span>
+<span class=giallo-l><span class=z-string>file /init init 0755 0 0</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-string">EOF</span></span></code></pre><p>The line starting with <code>file</code> takes an external file as a second parameter, and that's how we include the <code>init</code> program in the archive.<p>Note this is rootless, we don't need to re-create the filesystem tree locally or use fakeroot to create special file in the archive.<p>If you're following along, you now have created <code>initramfs.cpio</code> archive!<h1 id=test-with-qemu><a class=zola-anchor href=#test-with-qemu aria-label="Anchor link for: test-with-qemu">Test with Qemu</a></h1><p>With our initramfs we just need a linux kernel to be able to run it in qemu:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">qemu-system-$</span><span class=z-string>{HOSTTYPE}</span><span class=z-constant> -kernel</span><span class=z-string> vmlinuz-6.7.5-060705-generic</span><span class=z-constant> -initrd</span><span class=z-string> initramfs.cpio</span><span class=z-constant> -append</span><span class="z-punctuation z-definition z-string z-string"> &quot;console=ttyS0&quot;</span><span class=z-constant> -cpu</span><span class=z-string> max</span><span class=z-constant> -m</span><span class=z-string> 128M</span><span class=z-constant> -nographic -serial</span><span class=z-string> mon:stdio</span><span class=z-constant> -nodefaults</span><span class="z-punctuation z-definition z-comment z-comment"> # Press CTRL+a CTRL+x to quit qemu</span></span></code></pre><p>You can find pre-compiled kernel image in <a rel="noopener external" target=_blank href="https://kernel.ubuntu.com/mainline/?C=M;O=D">ubuntu repository</a></p><iframe loading=lazy width=656 height=443 class=center frameborder=0 type=text/svg+xml src=/posts/initramfs/term.svg data-display-frame=547></iframe><p>Happy hacking!</section></article></main></div><footer><hr><nav><a rel=me href=/about>Hugues</a> |
+<a rel=atom href=/atom.xml class="rss icon" title=rss></a><a rel=me href=https://github.com/izissise class="github icon" title=github></a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class="stack icon" title=stackoverflow></a><a rel=me href=https://links.izissise.net/ class="shaarli icon" title=shaarli></a><a rel=me href=https://www.linkedin.com/in/huguesmorisset/ class="linkedin icon" title=linkedin></a><a rel=me href="=MWM2IDZ1cDN0ATMwEDMyEjYxEmM5QDMwIWNmFjYxQDMkFDNyYDNxATMygDNwEDOwEWM3MjM1QDM" class="m-protected matrix icon" title=matrix></a><a rel=me href="==wYwQWMiBjZ0QDMhJjM1QDM2AjMzIWM0ADZxQjM2QTMwYGN2ADZwITMiFTYyEDN2AzYwgDN3ATNxQDMhJjM1QDM" class="m-protected mail icon" title=email></a>| &#169; 2026

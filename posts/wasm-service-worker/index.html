@@ -1,0 +1,293 @@
+<!doctype html><html lang=en><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>"><link rel=monetization href=https://ilp.gatehub.net/669637781/eur><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Wasm Service Worker","author":{"@type":"Person","name":"Hugues Morisset","url":"https://blog.izissise.net/about"},"datePublished":"3025-06-09"}</script><title>Wasm Service Worker</title><meta property="og:title" content="Wasm Service Worker"><script defer src=/js/codecopy.js></script><script defer src=/js/ofuscate.js></script><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com//count?p=/posts/wasm-service-worker/&t=Wasm Service Worker"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet media=screen href=/main.css><div class=content><header><nav><a href=/posts>/posts</a>
+<a href=/about>/about</a>
+<a href=/atom.xml>/rss</a>
+|
+<button id=theme type=reset title="switch theme">🌓</button>
+<script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Wasm Service Worker</div><div class=meta><span>Posted on <time datetime=3025-06-09>3025-06-09</time></span>
+<span class=draft-label>DRAFT</span>
+<span class=readingtime>3 minutes read</span></div></div><section class=body><h1 id=introduction><a class=zola-anchor href=#introduction aria-label="Anchor link for: introduction">Introduction</a></h1><p>As part of my job, I'm setting up a web application,<p>We mainly code with rust and so we want to use webassembly technology for our application.<p><a rel="noopener external" target=_blank href=https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker>Service Worker</a> is the thing we want to
+install on our webpage, once installed we will be able to catch any network requests and achieve offline work.<p>It is usually written in javascript directly hence this blog post.<h1 id=service-worker><a class=zola-anchor href=#service-worker aria-label="Anchor link for: service-worker">Service Worker</a></h1><p>Service workers are linked to a domain name and have 3 events we are interested in:<ul><li><p><code>install</code> called when the service worker is installing<li><p><code>activate</code> called when a web page open with this service worker<li><p><code>fetch</code> called when the web page does a network request</ul><p>There are some gotchas, you should call <a rel="noopener external" target=_blank href=https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting>skipWaiting</a> and <a rel="noopener external" target=_blank href=https://developer.mozilla.org/en-US/docs/Web/API/Clients/claim>clients.claim</a> on the install and activate event handlers.<blockquote><p>The skipWaiting() method of the ServiceWorkerGlobalScope interface forces the waiting service worker to become the active service worker.
+Use this method with Clients.claim() to ensure that updates to the underlying service worker take effect immediately for both the current client and all other active clients.</blockquote><p>We also going to need an html page that will load the service worker the first time, once loaded the service worker can override and serve its own index.html.<h1 id=web-assembly><a class=zola-anchor href=#web-assembly aria-label="Anchor link for: web-assembly">Web Assembly</a></h1><p>In order to get a web assembly service worker from rust, I getting great inspiration from <a rel="noopener external" target=_blank href=https://github.com/justinrubek/wasm-bindgen-service-worker>Justin Rubek wasm-bindgen-service-worker</a>, I have merged the service worker and initial loader code in the same file.<details><summary>Service Worker Rust code</summary><div><p>//! Wasm service worker entrypoint
+use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::{JsFuture, future_to_promise};
+use web_sys::{Navigator, RegistrationOptions, ServiceWorkerGlobalScope, ServiceWorkerRegistration, ServiceWorkerState, console, js_sys};<p>// Called when the wasm module is instantiated
+#[wasm_bindgen(start)]
+fn init_worker() -> Result&lt;(), JsValue> {
+let global = js_sys::global();<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>if let Ok(true) = js_sys::Reflect::has(&amp;amp;global, &amp;amp;JsValue::from_str(&amp;quot;ServiceWorkerGlobalScope&amp;quot;)) {</span></span>
+<span class=giallo-l><span>	console::log_1(&amp;amp;JsValue::from_str(&amp;quot;in service worker&amp;quot;));</span></span>
+<span class=giallo-l><span>	install_sw_handlers()?;</span></span>
+<span class=giallo-l><span>} else {</span></span>
+<span class=giallo-l><span>	console::log_1(&amp;amp;JsValue::from_str(&amp;quot;not in service worker&amp;quot;));</span></span>
+<span class=giallo-l><span>}</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>Ok(())</span></span></code></pre><p>}<p>#[inline]
+fn install_sw_handlers() -> Result&lt;(), JsValue> {
+let global = js_sys::global();
+// we're in a service worker, so we can cast the global to a ServiceWorkerGlobalScope
+let global = global.unchecked_into::&lt;ServiceWorkerGlobalScope>();<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>&amp;#x2F;&amp;#x2F; Force immediate activation</span></span>
+<span class=giallo-l><span>let on_install = on_install(&amp;amp;global)?;</span></span>
+<span class=giallo-l><span>let on_activate = on_activate(&amp;amp;global)?;</span></span>
+<span class=giallo-l><span>global.set_oninstall(Some(on_install.as_ref().unchecked_ref()));</span></span>
+<span class=giallo-l><span>global.set_onactivate(Some(on_activate.as_ref().unchecked_ref()));</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; register all callbacks</span></span>
+<span class=giallo-l><span>let on_message = on_message(&amp;amp;global)?;</span></span>
+<span class=giallo-l><span>let on_push = on_push(&amp;amp;global)?;</span></span>
+<span class=giallo-l><span>let on_fetch = on_fetch(&amp;amp;global)?;</span></span>
+<span class=giallo-l><span>global.set_onmessage(Some(on_message.as_ref().unchecked_ref()));</span></span>
+<span class=giallo-l><span>global.set_onpush(Some(on_push.as_ref().unchecked_ref()));</span></span>
+<span class=giallo-l><span>global.set_onfetch(Some(on_fetch.as_ref().unchecked_ref()));</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; Ensure that the closures are not dropped before the service worker is terminated</span></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; This is technically a memory leak, but I&amp;#x27;m not sure that it matters in this case</span></span>
+<span class=giallo-l><span>on_install.forget();</span></span>
+<span class=giallo-l><span>on_activate.forget();</span></span>
+<span class=giallo-l><span>on_message.forget();</span></span>
+<span class=giallo-l><span>on_push.forget();</span></span>
+<span class=giallo-l><span>on_fetch.forget();</span></span>
+<span class=giallo-l><span>Ok(())</span></span></code></pre><p>}<p>/// &lt;https://developer.mozilla.org/en-US/docs/Web/API/InstallEvent>
+fn on_install(global: &amp;ServiceWorkerGlobalScope) -> Result&lt;Closure&lt;dyn FnMut(web_sys::ExtendableEvent)>, JsValue> {
+let skip_waiting = global.skip_waiting()?;
+Ok(Closure::wrap(Box::new(move |event: web_sys::ExtendableEvent| {
+console::log_1(&amp;JsValue::from_str("sw on_install"));
+// &lt;https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting>
+event.wait_until(&amp;skip_waiting).unwrap();
+}) as Box&lt;dyn FnMut(_)>))
+}<p>/// &lt;https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/activate_event>
+fn on_activate(global: &amp;ServiceWorkerGlobalScope) -> Result&lt;Closure&lt;dyn FnMut(web_sys::ExtendableEvent)>, JsValue> {
+let clients = global.clients();
+Ok(Closure::wrap(Box::new(move |event: web_sys::ExtendableEvent| {
+console::log_1(&amp;JsValue::from_str("sw on_activate"));
+install_sw_handlers().unwrap();
+// &lt;https://developer.mozilla.org/en-US/docs/Web/API/Clients/claim>
+event.wait_until(&amp;clients.claim()).unwrap();
+console::log_1(&amp;JsValue::from_str("sw clients.claim()"));
+}) as Box&lt;dyn FnMut(_)>))
+}<p>/// Displays a message in the console when a message is received from the client
+fn on_message(<em>global: &amp;ServiceWorkerGlobalScope) -> Result&lt;Closure&lt;dyn FnMut(web_sys::ExtendableMessageEvent)>, JsValue> {
+Ok(Closure::wrap(Box::new(move |event: web_sys::ExtendableMessageEvent| {
+console::log_2(&amp;JsValue::from_str("sw msg:"), &amp;event.data());
+}) as Box&lt;dyn FnMut(</em>)>))
+}<p>/// &lt;https://developer.mozilla.org/en-US/docs/Web/API/Push_API>
+fn on_push(<em>global: &amp;ServiceWorkerGlobalScope) -> Result&lt;Closure&lt;dyn FnMut(web_sys::PushEvent)>, JsValue> {
+Ok(Closure::wrap(Box::new(move |event: web_sys::PushEvent| {
+console::log_2(
+&amp;JsValue::from_str("sw push:"),
+&amp;JsValue::from_str(event.data().map(|d| d.text()).unwrap_or_else(|| "unknow".to_owned()).as_str()),
+);
+}) as Box&lt;dyn FnMut(</em>)>))
+}<p>/// &lt;https://developer.mozilla.org/en-US/docs/Web/API/FetchEvent>
+fn on_fetch(<em>global: &amp;ServiceWorkerGlobalScope) -> Result&lt;Closure&lt;dyn FnMut(web_sys::FetchEvent)>, JsValue> {
+console::log_1(&amp;JsValue::from_str("set onfetch"));
+Ok(Closure::wrap(Box::new(move |event: web_sys::FetchEvent| {
+console::log_2(&amp;JsValue::from_str("sw fetch:"), &amp;JsValue::from_str(event.client_id().unwrap_or_else(|| "unknow".to_owned()).as_str()));
+let req = event.request();
+event
+.respond_with(&amp;future_to_promise(async move {
+let mut res_opts = web_sys::ResponseInit::new();
+res_opts.set_status(200);
+res_opts.set_headers(&amp;req.headers().into());
+let res = web_sys::Response::new_with_opt_readable_stream_and_init(req.body().as_ref(), &amp;res_opts)?;
+Ok(res.into())
+}))
+.unwrap();
+}) as Box&lt;dyn FnMut(</em>)>))
+}<p>////////////
+// LOADER //
+////////////<p>/// Retrieves the current service worker registration from the navigator
+async fn get_service_reg(navigator: &amp;Navigator) -> Result&lt;ServiceWorkerRegistration, JsValue> {
+let fut = navigator.service_worker().ready()?;
+let res = JsFuture::from(fut).await?;
+Ok(ServiceWorkerRegistration::from(res))
+}<p>fn get_worker_from_reg(reg: &amp;ServiceWorkerRegistration) -> Option&lt;web_sys::ServiceWorker> {
+reg.active().or_else(|| reg.waiting()).or_else(|| reg.installing())
+}<p>/// Creates a JS promise that resolves after the given number of milliseconds and awaits it
+async fn sleep(window: &amp;web_sys::Window, ms: i32) -> Result&lt;(), JsValue> {
+let promise = js_sys::Promise::new(&amp;mut |resolve, _reject| {
+window.set_timeout_with_callback_and_timeout_and_arguments_0(&amp;resolve, ms).unwrap();
+});
+JsFuture::from(promise).await?;
+Ok(())
+}<p>/// This function is responsible for loading a service worker script from the given URL.
+/// We use it to self load as a service worker but it could load something else.
+#[wasm_bindgen]
+pub async fn register_service_worker(
+worker_url: String,
+worker_type: String,
+worker_scope: String,
+_try_once: bool,
+) -> Result&lt;js_sys::Promise, JsValue> {
+console::log_1(&"registering service worker via wasm_bindgen".into());<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>let window = web_sys::window().expect(&amp;quot;no global `window` exists&amp;quot;);</span></span>
+<span class=giallo-l><span>let location = window.location();</span></span>
+<span class=giallo-l><span>let navigator = window.navigator();</span></span>
+<span class=giallo-l><span>let service_worker = navigator.service_worker();</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>let location_href = location.href().expect(&amp;quot;no href found&amp;quot;);</span></span>
+<span class=giallo-l><span>let url = web_sys::Url::new_with_base(&amp;amp;worker_url, &amp;amp;location_href)?;</span></span>
+<span class=giallo-l><span>let url = url.to_string().as_string().unwrap();</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>let mut opts = RegistrationOptions::new();</span></span>
+<span class=giallo-l><span>opts.scope(&amp;amp;worker_scope);</span></span>
+<span class=giallo-l><span>opts.type_(worker_type.as_str());</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>console::log_2(&amp;amp;&amp;quot;registering service worker with opts&amp;quot;.into(), &amp;amp;opts.clone().into());</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>let registration_fut = service_worker.register_with_options(&amp;amp;url, &amp;amp;opts);</span></span>
+<span class=giallo-l><span>let registration_res = JsFuture::from(registration_fut).await?;</span></span>
+<span class=giallo-l><span>let registration = ServiceWorkerRegistration::from(registration_res);</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>let registered_worker = get_worker_from_reg(&amp;amp;registration).ok_or_else(|| JsValue::from_str(&amp;quot;Service worker registration is not valid&amp;quot;))?;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>console::log_2(&amp;amp;&amp;quot;registered service worker&amp;quot;.into(), &amp;amp;registered_worker.clone().into());</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; Check to see if the registered worker is the same url</span></span>
+<span class=giallo-l><span>if registered_worker.script_url() != url {</span></span>
+<span class=giallo-l><span>	console::log_1(&amp;amp;&amp;quot;registered worker is not the same url&amp;quot;.into());</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>	let update_fut = registration.update()?;</span></span>
+<span class=giallo-l><span>	JsFuture::from(update_fut).await?;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>	console::log_1(&amp;amp;&amp;quot;service worker updated&amp;quot;.into());</span></span>
+<span class=giallo-l><span>}</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; Await service worker to be ready</span></span>
+<span class=giallo-l><span>let service_reg = get_service_reg(&amp;amp;navigator).await?;</span></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; attempt to get the service worker from the registration, if it&amp;#x27;s not there, try to re-get the registration and try again</span></span>
+<span class=giallo-l><span>let service_worker = match get_worker_from_reg(&amp;amp;service_reg) {</span></span>
+<span class=giallo-l><span>	Some(worker) =&amp;gt; worker,</span></span>
+<span class=giallo-l><span>	None =&amp;gt; {</span></span>
+<span class=giallo-l><span>		console::log_1(&amp;amp;&amp;quot;no worker on registration, trying to re-get registration&amp;quot;.into());</span></span>
+<span class=giallo-l><span>		let service_reg = get_service_reg(&amp;amp;navigator).await?;</span></span>
+<span class=giallo-l><span>		match get_worker_from_reg(&amp;amp;service_reg) {</span></span>
+<span class=giallo-l><span>			Some(worker) =&amp;gt; worker,</span></span>
+<span class=giallo-l><span>			None =&amp;gt; {</span></span>
+<span class=giallo-l><span>				console::log_1(&amp;amp;&amp;quot;no worker on registration, waiting a bit and trying again&amp;quot;.into());</span></span>
+<span class=giallo-l><span>				sleep(&amp;amp;window, 50).await?;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>				match get_worker_from_reg(&amp;amp;service_reg) {</span></span>
+<span class=giallo-l><span>					Some(worker) =&amp;gt; worker,</span></span>
+<span class=giallo-l><span>					None =&amp;gt; {</span></span>
+<span class=giallo-l><span>						console::log_1(&amp;amp;&amp;quot;no worker on registration, giving up&amp;quot;.into());</span></span>
+<span class=giallo-l><span>						return Err(JsValue::from_str(&amp;quot;Service worker registration is not valid&amp;quot;));</span></span>
+<span class=giallo-l><span>					}</span></span>
+<span class=giallo-l><span>				}</span></span>
+<span class=giallo-l><span>			}</span></span>
+<span class=giallo-l><span>		}</span></span>
+<span class=giallo-l><span>	}</span></span>
+<span class=giallo-l><span>};</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>match service_worker.state() {</span></span>
+<span class=giallo-l><span>	ServiceWorkerState::Redundant =&amp;gt; {</span></span>
+<span class=giallo-l><span>		console::log_1(&amp;amp;&amp;quot;service worker is redundant&amp;quot;.into());</span></span>
+<span class=giallo-l><span>		&amp;#x2F;&amp;#x2F; reload</span></span>
+<span class=giallo-l><span>		location.reload()?;</span></span>
+<span class=giallo-l><span>	}</span></span>
+<span class=giallo-l><span>	ServiceWorkerState::Activated =&amp;gt; {</span></span>
+<span class=giallo-l><span>		console::log_1(&amp;amp;&amp;quot;service worker is activated&amp;quot;.into());</span></span>
+<span class=giallo-l><span>	}</span></span>
+<span class=giallo-l><span>	_ =&amp;gt; {</span></span>
+<span class=giallo-l><span>		console::log_1(&amp;amp;&amp;quot;service worker controlling, but not activated. Waiting on event&amp;quot;.into());</span></span>
+<span class=giallo-l><span>		&amp;#x2F;&amp;#x2F; reload the page</span></span>
+<span class=giallo-l><span>		location.reload()?;</span></span>
+<span class=giallo-l><span>	}</span></span>
+<span class=giallo-l><span>}</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>Ok(js_sys::Promise::resolve(&amp;amp;JsValue::from(service_worker)))</span></span></code></pre><p>}</div></details><p>It can be compiled with the following two commands:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">cargo</span><span class=z-string> build</span><span class=z-constant> --target</span><span class=z-string> wasm32-unknown-unknown</span></span>
+<span class=giallo-l><span class="z-entity z-name">wasm-bindgen</span><span class=z-constant> --target</span><span class=z-string> no-modules</span><span class=z-constant> --no-typescript  --out-dir</span><span class=z-string> target/wasmloader/ target/wasm32-unknown-unknown/debug/sw.wasm</span></span></code></pre><h1 id=wasm-bindgen><a class=zola-anchor href=#wasm-bindgen aria-label="Anchor link for: wasm-bindgen">Wasm bindgen</a></h1><p><code>wasm-bindgen</code> will generate a javascript file that will help load the wasm file, but it doesn't auto load a service worker, so we need to add some javascript code at the end of <code>sw.js</code><details><summary>Service Worker Javascript loader</summary><div><p>function fetch_or_cache(url, onprogress) {
+return new Promise((resolve, reject) => {
+const cache_or_rej = (e) => {
+return caches.open('offline').then((cache) => {
+return cache.match(url);
+}).then((r) => {
+return r.arrayBuffer();
+}).then((ab) => {
+console.log('cache hit!', url, 'size', ab.byteLength);
+resolve(ab);
+}, (e2) => reject([e, e2]));
+};<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>	if (typeof XMLHttpRequest !== &amp;#x27;undefined&amp;#x27;) {</span></span>
+<span class=giallo-l><span>		const x = new XMLHttpRequest();</span></span>
+<span class=giallo-l><span>		x.responseType = &amp;#x27;arraybuffer&amp;#x27;;</span></span>
+<span class=giallo-l><span>		x.open(&amp;#x27;GET&amp;#x27;, url);</span></span>
+<span class=giallo-l><span>		x.onprogress = onprogress;</span></span>
+<span class=giallo-l><span>		x.onload = () =&amp;gt; {</span></span>
+<span class=giallo-l><span>			if (x.status != 200) { return cache_or_rej(x); }</span></span>
+<span class=giallo-l><span>			&amp;#x2F;&amp;#x2F; keep in offline cache</span></span>
+<span class=giallo-l><span>			return caches.open(&amp;#x27;offline&amp;#x27;).then((cache) =&amp;gt; {</span></span>
+<span class=giallo-l><span>				let r = new Response(new Blob([x.response]));</span></span>
+<span class=giallo-l><span>				return cache.put(url, r);</span></span>
+<span class=giallo-l><span>			}).then(() =&amp;gt; {</span></span>
+<span class=giallo-l><span>				resolve(x.response);</span></span>
+<span class=giallo-l><span>			});</span></span>
+<span class=giallo-l><span>		};</span></span>
+<span class=giallo-l><span>		x.onerror = cache_or_rej;</span></span>
+<span class=giallo-l><span>		x.send();</span></span>
+<span class=giallo-l><span>	} else {</span></span>
+<span class=giallo-l><span>		return fetch(url).then((r) =&amp;gt; {</span></span>
+<span class=giallo-l><span>			if (!r.ok) { return cache_or_rej(r); }</span></span>
+<span class=giallo-l><span>			&amp;#x2F;&amp;#x2F; keep in offline cache</span></span>
+<span class=giallo-l><span>			return caches.open(&amp;#x27;offline&amp;#x27;).then((cache) =&amp;gt; {</span></span>
+<span class=giallo-l><span>				return cache.put(url, r);</span></span>
+<span class=giallo-l><span>			}).then(() =&amp;gt; {</span></span>
+<span class=giallo-l><span>				return r.arrayBuffer();</span></span>
+<span class=giallo-l><span>			});</span></span>
+<span class=giallo-l><span>		}).then(resolve, cache_or_rej);</span></span>
+<span class=giallo-l><span>	}</span></span>
+<span class=giallo-l><span>});</span></span></code></pre><p>}<p>function load_and_init_wasm(url, onprogress) {
+return fetch_or_cache(url, onprogress).then((m) => wasm_bindgen.initSync({ module: m }));
+}<p>if (navigator.constructor.name === 'WorkerNavigator') {
+const sww = self.serviceWorker.scriptURL.replace(/.js$/, '_bg.wasm');
+load_and_init_wasm(sww);<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>self.addEventListener(&amp;#x27;install&amp;#x27;, event =&amp;gt; {</span></span>
+<span class=giallo-l><span>    event.waitUntil(load_and_init_wasm(sww));</span></span>
+<span class=giallo-l><span>    event.waitUntil(self.skipWaiting());</span></span>
+<span class=giallo-l><span>});</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>self.addEventListener(&amp;#x27;activate&amp;#x27;, event =&amp;gt; {</span></span>
+<span class=giallo-l><span>    event.waitUntil(load_and_init_wasm(sww));</span></span>
+<span class=giallo-l><span>    event.waitUntil(clients.claim());</span></span>
+<span class=giallo-l><span>});</span></span>
+<span class=giallo-l><span>&amp;#x2F;&amp;#x2F; HACK allow wasm to receive the events</span></span>
+<span class=giallo-l><span>self.onfetch = (event) =&amp;gt; { console.log(&amp;#x27;js fetch&amp;#x27;); }</span></span></code></pre><p>}</div></details>Inside <code>if (navigator.constructor.name === 'WorkerNavigator')</code> we have a service worker context and we can <code>load_and_init_wasm</code>.<p>Once again there are some gotchas, the event handlers need to be setup synchronously in the global context, when the service worker is active on firefox, it fail loading the wasm file from the service worker if it is not in cache.<h1 id=loader><a class=zola-anchor href=#loader aria-label="Anchor link for: loader">Loader</a></h1><p>The first time we load the web page, we want to register the service worker, since the loader code is also in the wasm file we can load the same file and put it in cache directly. We just have to call <code>register_service_worker</code> function<details><summary>Loader page</summary><div><p>&lt;!doctype html>
+&lt;html lang=''>
+&lt;head>
+&lt;meta charset='utf-8'>
+&lt;title>Natae Loader&lt;/title>
+&lt;body>
+&lt;h1>Loading Natae...&lt;/h1>
+&lt;progress id='p' max='100' value='0' style='width:200px'>&lt;/progress>
+&lt;pre id='log'>&lt;/pre>
+&lt;script sw='${SW_NAME}.js'>
+const nl = String.fromCharCode(10);
+const log = document.getElementById('log');
+const info=(...a)=>{console.log(...a);log.textContent+=a.join(' ')+nl};
+const error=(...a)=>{console.error(...a);log.textContent+=a.join(' ')+nl};
+let sw = document.currentScript.attributes['sw'].value;
+let sw_wasm = sw.replace(/.js$/, '_bg.wasm');<pre class="giallo z-code"><code data-lang=plain><span class=giallo-l><span>    let script = document.createElement(&amp;#x27;script&amp;#x27;);</span></span>
+<span class=giallo-l><span>    script.src = sw;</span></span>
+<span class=giallo-l><span>    script.s = sw;</span></span>
+<span class=giallo-l><span>    script.addEventListener(&amp;#x27;error&amp;#x27;, (e) =&amp;gt; {</span></span>
+<span class=giallo-l><span>        error(&amp;#x27;error stage1&amp;#x27;, e);</span></span>
+<span class=giallo-l><span>    });</span></span>
+<span class=giallo-l><span>    script.addEventListener(&amp;#x27;load&amp;#x27;, () =&amp;gt; {</span></span>
+<span class=giallo-l><span>        const p = document.getElementById(&amp;#x27;p&amp;#x27;);</span></span>
+<span class=giallo-l><span>        const onprogress = (e) =&amp;gt; {</span></span>
+<span class=giallo-l><span>            if (e.lengthComputable) {</span></span>
+<span class=giallo-l><span>                p.value = Math.round(e.loaded &amp;#x2F; e.total * 100);</span></span>
+<span class=giallo-l><span>            }</span></span>
+<span class=giallo-l><span>        };</span></span>
+<span class=giallo-l><span>        return load_and_init_wasm(sw_wasm, onprogress).then((wasm) =&amp;gt; {</span></span>
+<span class=giallo-l><span>            &amp;#x2F;&amp;#x2F; load service worker</span></span>
+<span class=giallo-l><span>            wasm_bindgen.register_service_worker(sw, &amp;#x27;classic&amp;#x27;, &amp;#x27;&amp;#x2F;&amp;#x27;).then(</span></span>
+<span class=giallo-l><span>                (reg) =&amp;gt; {</span></span>
+<span class=giallo-l><span>                    info(&amp;#x27;Service Worker registered&amp;#x27;, reg)</span></span>
+<span class=giallo-l><span>                    setTimeout(() =&amp;gt; {</span></span>
+<span class=giallo-l><span>                    info(&amp;#x27;Reloading page&amp;#x27;);</span></span>
+<span class=giallo-l><span>                    window.location.reload();</span></span>
+<span class=giallo-l><span>                    }, &amp;#x27;2000&amp;#x27;);</span></span>
+<span class=giallo-l><span>                },</span></span>
+<span class=giallo-l><span>                (err) =&amp;gt; error(&amp;#x27;Service Worker registration failed&amp;#x27;, err),</span></span>
+<span class=giallo-l><span>            );</span></span>
+<span class=giallo-l><span>        });</span></span>
+<span class=giallo-l><span>    });</span></span>
+<span class=giallo-l><span>    document.head.appendChild(script);</span></span>
+<span class=giallo-l><span>&amp;lt;&amp;#x2F;script&amp;gt;</span></span></code></pre></div></details></section></article></main></div><footer><hr><nav><a rel=me href=/about>Hugues</a> |
+<a rel=atom href=/atom.xml class="rss icon" title=rss></a><a rel=me href=https://github.com/izissise class="github icon" title=github></a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class="stack icon" title=stackoverflow></a><a rel=me href=https://links.izissise.net/ class="shaarli icon" title=shaarli></a><a rel=me href=https://www.linkedin.com/in/huguesmorisset/ class="linkedin icon" title=linkedin></a><a rel=me href="=MWM2IDZ1cDN0ATMwEDMyEjYxEmM5QDMwIWNmFjYxQDMkFDNyYDNxATMygDNwEDOwEWM3MjM1QDM" class="m-protected matrix icon" title=matrix></a><a rel=me href="==wYwQWMiBjZ0QDMhJjM1QDM2AjMzIWM0ADZxQjM2QTMwYGN2ADZwITMiFTYyEDN2AzYwgDN3ATNxQDMhJjM1QDM" class="m-protected mail icon" title=email></a>| &#169; 2026

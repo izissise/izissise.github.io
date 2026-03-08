@@ -1,0 +1,116 @@
+<!doctype html><html lang=en><meta charset=UTF-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>"><link rel=monetization href=https://ilp.gatehub.net/669637781/eur><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Edk2 UEFI Boot 0000","author":{"@type":"Person","name":"Hugues Morisset","url":"https://blog.izissise.net/about"},"datePublished":"2024-05-20"}</script><title>Edk2 UEFI Boot 0000</title><meta property="og:title" content="Edk2 UEFI Boot 0000"><script defer src=/js/codecopy.js></script><script defer src=/js/ofuscate.js></script><script data-goatcounter=https://izissise.goatcounter.com/count async src=/js/count.js></script><noscript><img style=display:none src="https://izissise.goatcounter.com//count?p=/posts/edk2boot0000/&t=Edk2 UEFI Boot 0000"></noscript><link rel=alternate type=application/atom+xml title href=/atom.xml><link rel=stylesheet media=screen href=/main.css><div class=content><header><nav><a href=/posts>/posts</a>
+<a href=/about>/about</a>
+<a href=/atom.xml>/rss</a>
+|
+<button id=theme type=reset title="switch theme">🌓</button>
+<script src=/js/themetoggle.js></script></nav></header><main><article><div class=title><div class=page-header>Edk2 UEFI Boot 0000</div><div class=meta><span>Posted on <time datetime=2024-05-20>2024-05-20</time></span>
+<span class=readingtime>3 minutes read</span></div></div><section class=body><h1 id=edk2><a class=zola-anchor href=#edk2 aria-label="Anchor link for: edk2">Edk2</a></h1><p><a rel="noopener external" target=_blank href=https://github.com/tianocore/edk2>Edk2</a> is the official UEFI implementation.
+One problem I encountered is that it doesn't provide a way to specify the default boot entry.<p>If you already know what the default boot device or application should be, then it should be
+possible to set it in the 'to be flashed' file.<p>Here I made a patch that add a PCD option to choose which entry will be <code>Boot0000</code>,
+hence it will be booted first if no other value has been set in the <code>NVStore</code>.<h1 id=compile-edk2><a class=zola-anchor href=#compile-edk2 aria-label="Anchor link for: compile-edk2">Compile EDK2</a></h1><p>See <a rel="noopener external" target=_blank href=https://github.com/tianocore/tianocore.github.io/wiki/Getting-Started-with-EDK-II>Getting Started with EDK II</a> for complete compilation steps.<p>It boils down to the following:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-punctuation z-definition z-comment z-comment"># Download edk2 source</span></span>
+<span class=giallo-l><span class="z-entity z-name">git</span><span class=z-string> clone</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>   --filter=tree:0 --single-branch --depth 1 \</span></span>
+<span class=giallo-l><span class=z-constant>   --recurse-submodules --shallow-submodules \</span></span>
+<span class=giallo-l><span class=z-constant>   --branch</span><span class="z-punctuation z-definition z-string z-string"> &quot;${</span><span class="z-variable z-other">EDK2_VERSION</span><span class=z-keyword>:-</span><span class="z-variable z-other">edk2-stable202308</span><span class="z-string z-punctuation z-definition z-string">}&quot;</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-string z-string">   &quot;https://github.com/tianocore/edk2.git&quot;</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-string z-string">   &quot;edk2&quot;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class=z-support>cd</span><span class="z-punctuation z-definition z-string z-string"> &quot;edk2&quot;</span></span>
+<span class=giallo-l><span class="z-entity z-name">make</span><span class=z-constant> -j 4 -C</span><span class=z-string> BaseTools Source/C</span></span>
+<span class=giallo-l><span class="z-entity z-name">make</span><span class=z-constant> -j 4 -C</span><span class=z-string> BaseTools Source/Python</span></span>
+<span class=giallo-l><span class="z-entity z-name">mkdir</span><span class=z-constant> -p</span><span class=z-string> edk2build</span></span>
+<span class=giallo-l><span class=z-storage>export</span><span class="z-variable z-other"> WORKSPACE</span><span class=z-keyword>=</span><span class="z-punctuation z-definition z-string">&quot;</span><span class="z-variable z-other">$PWD</span><span class="z-string z-punctuation z-definition z-string">/edk2build&quot;</span></span>
+<span class=giallo-l><span class=z-storage>export</span><span class="z-variable z-other"> PACKAGES_PATH</span><span class=z-keyword>=</span><span class="z-punctuation z-definition z-string">&quot;</span><span class="z-variable z-other">$PWD</span><span class="z-punctuation z-definition z-string">&quot;</span></span>
+<span class=giallo-l><span class=z-support>source</span><span class=z-string> edksetup.sh</span></span></code></pre><p>Now our shell is setup with edk2 environment and we can build UEFI firmwares.
+But first, we'll add the patch.<h1 id=apply-the-patch><a class=zola-anchor href=#apply-the-patch aria-label="Anchor link for: apply-the-patch">Apply the patch</a></h1><details><summary>It can also be found in the form of a <a rel="noopener external" target=_blank href=https://github.com/tianocore/edk2/pull/5396>pull request</a></summary><div><pre class="giallo z-code"><code data-lang=diff><span class=giallo-l><span class="z-meta z-separator">---</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header">diff --git MdeModulePkg/MdeModulePkg.dec MdeModulePkg/MdeModulePkg.dec</span></span>
+<span class=giallo-l><span>index 0ff058b0..6ee074c3 100644</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-from-file">--- MdeModulePkg/MdeModulePkg.dec</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-to-file">+++ MdeModulePkg/MdeModulePkg.dec</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-range">@@ -2151,6 +2151,10 @@</span></span>
+<span class=giallo-l><span>   # @Prompt The value is use for Usb Network rate limiting supported.</span></span>
+<span class=giallo-l><span>   gEfiMdeModulePkgTokenSpaceGuid.PcdUsbNetworkRateLimitingFactor|100|UINT32|0x10000028</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  ## Indicate the first boot entry, does not set bootorder</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  # @Prompt First boot entry.</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformBootBoot0000|L&quot;&quot;|VOID*|0x0000012e</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted">+</span></span>
+<span class=giallo-l><span> [PcdsPatchableInModule]</span></span>
+<span class=giallo-l><span>   ## Specify memory size with page number for PEI code when</span></span>
+<span class=giallo-l><span>   #  Loading Module at Fixed Address feature is enabled.</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header">diff --git MdeModulePkg/Universal/BdsDxe/BdsDxe.inf MdeModulePkg/Universal/BdsDxe/BdsDxe.inf</span></span>
+<span class=giallo-l><span>index 5bac635d..557c2361 100644</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-from-file">--- MdeModulePkg/Universal/BdsDxe/BdsDxe.inf</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-to-file">+++ MdeModulePkg/Universal/BdsDxe/BdsDxe.inf</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-range">@@ -98,6 +98,7 @@</span></span>
+<span class=giallo-l><span>   gEfiMdeModulePkgTokenSpaceGuid.PcdTestKeyUsed                       ## CONSUMES</span></span>
+<span class=giallo-l><span>   gEfiMdeModulePkgTokenSpaceGuid.PcdCapsuleOnDiskSupport              ## CONSUMES</span></span>
+<span class=giallo-l><span>   gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformRecoverySupport           ## CONSUMES</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformBootBoot0000              ## CONSUMES</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span> [Depex]</span></span>
+<span class=giallo-l><span>   TRUE</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header">diff --git MdeModulePkg/Universal/BdsDxe/BdsEntry.c MdeModulePkg/Universal/BdsDxe/BdsEntry.c</span></span>
+<span class=giallo-l><span>index 72de8d32..dc773513 100644</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-from-file">--- MdeModulePkg/Universal/BdsDxe/BdsEntry.c</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-header z-to-file">+++ MdeModulePkg/Universal/BdsDxe/BdsEntry.c</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-range">@@ -692,6 +692,9 @@</span><span> BdsEntry (</span></span>
+<span class=giallo-l><span>   EFI_STATUS                      BootManagerMenuStatus;</span></span>
+<span class=giallo-l><span>   EFI_BOOT_MANAGER_LOAD_OPTION    PlatformDefaultBootOption;</span></span>
+<span class=giallo-l><span>   BOOLEAN                         PlatformDefaultBootOptionValid;</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  EFI_BOOT_MANAGER_LOAD_OPTION    PlatformDefaultBoot0000;</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  BOOLEAN                         PlatformDefaultBoot0000Valid;</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  CONST CHAR16                    *Boot0000;</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span>   HotkeyTriggered = NULL;</span></span>
+<span class=giallo-l><span>   Status          = EFI_SUCCESS;</span></span>
+<span class=giallo-l><span class="z-meta z-diff z-range">@@ -799,6 +802,35 @@</span><span> BdsEntry (</span></span>
+<span class=giallo-l><span>     BootNext = NULL;</span></span>
+<span class=giallo-l><span>   }</span></span>
+<span class=giallo-l></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  Boot0000 = ((CONST CHAR16 *)PcdGetPtr (PcdPlatformBootBoot0000));</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  if (Boot0000 &amp;&amp; (*Boot0000 != L&#39;\0&#39;)) {</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    FilePath = ConvertTextToDevicePath (Boot0000);</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    if (FilePath == NULL) {</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+      DEBUG ((DEBUG_ERROR, &quot;Fail to allocate memory for default boot file path. Unable to boot.\n&quot;));</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+      CpuDeadLoop ();</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    }</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted">+</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    PlatformDefaultBoot0000Valid = EfiBootManagerInitializeLoadOption (</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     &amp;PlatformDefaultBoot0000,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     0,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     LoadOptionTypeBoot,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     LOAD_OPTION_ACTIVE,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     L&quot;Default PlatformBoot&quot;,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     FilePath,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     NULL,</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     0</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+                                     ) == EFI_SUCCESS;</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted">+</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    DEBUG ((DEBUG_ERROR, &quot;%d\n&quot;, PlatformDefaultBoot0000Valid));</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    ASSERT (PlatformDefaultBoot0000Valid == TRUE);</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    if (PlatformDefaultBoot0000Valid) {</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+      EfiBootManagerLoadOptionToVariable (&amp;PlatformDefaultBoot0000);</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+      EfiBootManagerFreeLoadOption (&amp;PlatformDefaultBoot0000);</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    }</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted">+</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+    FreePool (FilePath);</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted z-markup z-inserted">+  }</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-inserted">+</span></span>
+<span class=giallo-l><span>   //</span></span>
+<span class=giallo-l><span>   // Initialize the platform language variables</span></span>
+<span class=giallo-l><span>   //</span></span>
+<span class=giallo-l><span class="z-punctuation z-definition z-deleted z-markup z-deleted">--</span></span>
+<span class=giallo-l><span>2.43.0</span></span>
+<span class=giallo-l></span></code></pre></div></details><p>Edk2 source code has CRLF line endings and has whitespace-only lines, which can confuse the patch command.
+However, git apply works fine.<p>In edk2 source code:
+<code>git apply --ignore-whitespace -p0 Pcd-boot0000.patch</code><h1 id=build-a-firmware><a class=zola-anchor href=#build-a-firmware aria-label="Anchor link for: build-a-firmware">Build a firmware</a></h1><p>With the patch applied edk2 accepts a new configuration key <code>gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformBootBoot0000</code>,
+which takes an <code>UTF-16</code> string.<p>To enter the correct value, we need first to find our firmware GUID and the application GUID:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class="z-entity z-name">find</span><span class=z-constant> -name</span><span class="z-punctuation z-definition z-string z-string"> &#39;OvmfPkgX64.fdf&#39;</span><span class=z-constant> -exec</span><span class=z-string> grep FvNameGuid {}</span><span class=z-constant> \;</span><span class="z-punctuation z-definition z-comment z-comment"> # Fv</span></span>
+<span class=giallo-l><span class="z-entity z-name">grep</span><span class=z-string> FILE_GUID ShellPkg/Application/Shell/Shell.inf</span><span class="z-punctuation z-definition z-comment z-comment">     # FvFile</span></span></code></pre><p>It is then possible to choose the default boot:<ul><li><code>Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(7C04A583-9E3E-4f1c-AD65-E05268D0B4D1)</code> boots into shell<li><code>Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(462CAA21-7614-4503-836E-8AB6F4662331)</code> boots into uefi manager</ul><p>It uses <code>EfiDevicePathProtocol</code> under the hood, you can guess more boot options from these files:<ul><li><a rel="noopener external" target=_blank href=https://github.com/tianocore/edk2/blob/master/MdePkg/Include/Protocol/DevicePath.h>DevicePath.h</a><li><a rel="noopener external" target=_blank href=https://github.com/tianocore/edk2/blob/master/MdePkg/Library/UefiDevicePathLib/DevicePathFromText.c>DevicePathFromText.c</a><li><a rel="noopener external" target=_blank href=https://github.com/tianocore/edk2/blob/master/MdePkg/Library/UefiDevicePathLib/DevicePathToText.c>DevicePathToText.c</a></ul><blockquote class=note><p class=box-title><i class=icon title=note></i>note<div></div><p>Anything that is recognized as a filesystem by edk2 can be booted directly with its path (<code>/EFI/BOOT/grub.efi</code>)<p>Firmware memory can be mapped as a filesystem with <code>LoadFileOnFv2</code>.</blockquote><p>Anyway, let's build:<pre class="giallo z-code"><code data-lang=shellscript><span class=giallo-l><span class=z-storage>export</span><span class="z-variable z-other"> BOOT0000</span><span class=z-keyword>=</span><span class="z-punctuation z-definition z-string z-string">&quot;Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(462CAA21-7614-4503-836E-8AB6F4662331)&quot;</span></span>
+<span class=giallo-l><span class="z-entity z-name">build</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    -t</span><span class=z-string> GCC5</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --buildtarget=</span><span class="z-punctuation z-definition z-string z-string">&quot;RELEASE&quot;</span><span class=z-constant> \</span></span>
+<span class=giallo-l><span class=z-constant>    --arch=X64 \</span></span>
+<span class=giallo-l><span class=z-constant>    --platform=OvmfPkg/OvmfPkgX64.dsc \</span></span>
+<span class=giallo-l><span class=z-constant>    --pcd=gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformBootBoot0000=</span><span class="z-punctuation z-definition z-string z-string">&quot;L${</span><span class="z-variable z-other">BOOT0000</span><span class="z-string z-punctuation z-definition z-string">}&quot;</span><span class="z-punctuation z-definition z-comment z-comment"> # `L` prefix to convert to UTF-16</span></span></code></pre><h1 id=test-with-qemu><a class=zola-anchor href=#test-with-qemu aria-label="Anchor link for: test-with-qemu">Test with QEMU</a></h1><p><code>qemu-system-x86_64 -m 64M -enable-kvm -nographic -drive if=pflash,file="$(find -name OVMF.fd)",format=raw,readonly=on</code></p><iframe loading=lazy width=656 height=443 class=center frameborder=0 type=text/svg+xml src=/posts/edk2boot0000/term.svg data-display-frame=386></iframe><p>It's good to know that QEMU will automatically create an NVStore for the firmware to use and will automatically set a BootOrder. This can be configured using <a rel="noopener external" target=_blank href=https://www.qemu.org/docs/master/specs/fw_cfg.html>fw_cfg</a>.<h1 id=alternative><a class=zola-anchor href=#alternative aria-label="Anchor link for: alternative">Alternative</a></h1><p>If you intend to flash the target device's NVRAM, you can achieve the same result with <code>virt-fw-vars</code>, see this <a rel="noopener external" target=_blank href=https://stackoverflow.com/a/76471402>stackoverflow post</a> for more details.<h1 id=conclusion><a class=zola-anchor href=#conclusion aria-label="Anchor link for: conclusion">Conclusion</a></h1><p>Now you can choose the default boot at the compilation step and before the first boot without touching the <code>NVStore</code>.<p>That's all, good day!</section></article></main></div><footer><hr><nav><a rel=me href=/about>Hugues</a> |
+<a rel=atom href=/atom.xml class="rss icon" title=rss></a><a rel=me href=https://github.com/izissise class="github icon" title=github></a><a rel=me href=https://stackoverflow.com/users/2838914/izissise class="stack icon" title=stackoverflow></a><a rel=me href=https://links.izissise.net/ class="shaarli icon" title=shaarli></a><a rel=me href=https://www.linkedin.com/in/huguesmorisset/ class="linkedin icon" title=linkedin></a><a rel=me href="=MWM2IDZ1cDN0ATMwEDMyEjYxEmM5QDMwIWNmFjYxQDMkFDNyYDNxATMygDNwEDOwEWM3MjM1QDM" class="m-protected matrix icon" title=matrix></a><a rel=me href="==wYwQWMiBjZ0QDMhJjM1QDM2AjMzIWM0ADZxQjM2QTMwYGN2ADZwITMiFTYyEDN2AzYwgDN3ATNxQDMhJjM1QDM" class="m-protected mail icon" title=email></a>| &#169; 2026
