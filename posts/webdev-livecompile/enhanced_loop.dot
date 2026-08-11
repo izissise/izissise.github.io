@@ -1,0 +1,70 @@
+digraph EncapsulationLoop {
+    compound=true;
+    rankdir=LR;
+    nodesep=0.5;
+    ranksep=0.6;
+    fontname="Helvetica,Arial,sans-serif";
+
+    node [fontname="Helvetica,Arial,sans-serif", shape=box, style=filled];
+    edge [fontname="Helvetica,Arial,sans-serif", fontsize=10, color="#495057"];
+
+    subgraph cluster_systemfd {
+        label = "systemfd";
+        style = "rounded,filled";
+        fillcolor = "#f8f9fa";
+        color = "#adb5bd";
+        margin = 20;
+
+        Socket [label="Listening Socket\n(FD)", shape=cylinder, fillcolor="#cff4fc", color="#9eeaf9"];
+
+        subgraph cluster_watchexec {
+            label = "watchexec";
+            style = "rounded,filled";
+            fillcolor = "#e9ecef";
+            color = "#ced4da";
+            margin = 20;
+
+            // Proxies
+            Watch_Proxy [label="On change", shape=circle, width=0.8, fixedsize=true, fillcolor="#f8d7da", color="#dc3545", fontsize=8];
+            FD_Proxy [label="FD", shape=circle, width=0.4, fixedsize=true, fillcolor="#cff4fc", color="#0dcaf0", fontsize=8];
+
+            { rank=same; Watch_Proxy; FD_Proxy }
+
+            Socat [label="socat\n(http stream)", fillcolor="#e2e3e5", color="#adb5bd"];
+            Compile [label="Compile\n(cargo build)", fillcolor="#fff3cd", color="#ffe69c"];
+            Run [label="Run\n(Web Server)", fillcolor="#d1e7dd", color="#a3cfbb"];
+            LogFile [label="Log File", shape=note, fillcolor="#ffffff", border="dashed"];
+
+            // --- The Invisible Skeleton ---
+            // This forces the perfect left-to-right layout without relying on arrows
+            FD_Proxy -> Socat [style=invis, weight=10];
+            Socat -> Compile [style=invis, weight=10];
+            Compile -> Run [style=invis, weight=10];
+            Run -> LogFile [style=invis, weight=10];
+
+            // --- The Actual Visible Edges ---
+
+            // Core Logic
+            Compile -> Run [label=" success"];
+
+            // Back-arrows (constraint=false stops them from breaking the skeleton)
+            Compile -> Socat [label=" kills on success", style=dashed, color="#dc3545", fontcolor="#dc3545", constraint=false];
+            LogFile -> Socat [label=" reads", constraint=false];
+
+            // Log File Flow
+            Compile -> LogFile [label=" writes", style=dotted];
+            Run -> LogFile [label=" writes", style=dotted];
+
+            // FD Distribution (constraint=false on the long jump to keep it clean)
+            FD_Proxy -> Socat [label=" passes FD", color="#0dcaf0", fontcolor="#0dcaf0"];
+            FD_Proxy -> Run [label=" passes FD", color="#0dcaf0", fontcolor="#0dcaf0", constraint=false];
+
+            // Watch Triggers
+            Watch_Proxy -> Socat [label=" restarts socat", style=dashed, color="#dc3545", fontcolor="#dc3545"];
+            Watch_Proxy -> Compile [label=" restarts loop", style=dashed, color="#dc3545", fontcolor="#dc3545"];
+            Watch_Proxy -> Run [label=" kills server", style=dashed, color="#dc3545", fontcolor="#dc3545", constraint=false];
+        }
+
+        Socket -> FD_Proxy [color="#0dcaf0"];
+    }
+}

@@ -1,0 +1,64 @@
+digraph EncapsulationLoop {
+    compound=true; 
+    rankdir=LR; 
+    
+    // Tightened spacing parameters for a more compact footprint
+    nodesep=0.3;
+    ranksep=0.6;
+    fontname="Helvetica,Arial,sans-serif";
+    
+    node [fontname="Helvetica,Arial,sans-serif", shape=box, style=filled];
+    edge [fontname="Helvetica,Arial,sans-serif", fontsize=10, color="#495057"];
+
+    // External Entity
+//     SourceFiles [label="Source Files", shape=note, fillcolor="#e2e3e5", color="#adb5bd"];
+
+    // Outer Encapsulation: systemfd
+    subgraph cluster_systemfd {
+        label = "systemfd";
+        style = "rounded,filled";
+        fillcolor = "#f8f9fa";
+        color = "#adb5bd";
+        fontcolor = "#495057";
+        margin = 7; // Reduced margin
+
+        // systemfd creates and holds the socket
+        Socket [label="Listening Socket\n(FD)", shape=cylinder, fillcolor="#cff4fc", color="#9eeaf9"];
+
+        // Inner Encapsulation: watchexec
+        subgraph cluster_watchexec {
+            label = "watchexec";
+            style = "rounded,filled";
+            fillcolor = "#e9ecef";
+            color = "#ced4da";
+            fontcolor = "#495057";
+            margin = 7; // Reduced margin
+
+            // Routing nodes
+            Watch_Proxy [label="On change", shape=circle, width=1, fixedsize=true, fillcolor="#f8d7da", color="#dc3545", fontsize=8];
+            FD_Proxy [label="FD", shape=circle, width=0.35, fixedsize=true, fillcolor="#cff4fc", color="#0dcaf0", fontsize=8];
+            
+            // Force the proxies into the same vertical column to prevent height stretching
+            { rank=same; Watch_Proxy; FD_Proxy }
+
+            Compile [label="Compile\n(cargo build)", fillcolor="#fff3cd", color="#ffe69c"];
+            Run [label="Run\n(Web Server)", fillcolor="#d1e7dd", color="#a3cfbb"];
+            
+            Compile -> Run [label=" on success"];
+            
+            // FD Passing Logic
+            FD_Proxy -> Run [label=" passes FD to server", color="#0dcaf0", fontcolor="#0dcaf0"];
+            
+            // Watcher Logic
+            Watch_Proxy -> Run [label=" kills server", style=dashed, color="#dc3545", fontcolor="#dc3545"];
+            Watch_Proxy -> Compile [label=" restarts loop", style=dashed, color="#dc3545", fontcolor="#dc3545"];
+        }
+        
+        // systemfd passes the socket to watchexec
+        Socket -> FD_Proxy [label=" passes FD\nto watchexec", color="#0dcaf0", fontcolor="#0dcaf0"];
+    }
+
+    // Source files trigger watchexec
+//     SourceFiles -> Watch_Proxy [label=" triggers watchexec\non change", color="#dc3545", fontcolor="#dc3545"];
+}
+
